@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { TOC } from "../components/TOC";
+import * as Motion from "../components/Motion";
 
 type OutputFormat = 'compact' | 'standard' | 'detailed' | 'forensic';
 
@@ -379,7 +381,25 @@ export function SideNav() {
   const links = [
     { href: "/", label: "Overview" },
     { href: "/install", label: "Install" },
-    { href: "/spec", label: "Schema", badge: "v1.0" },
+    {
+      href: "/spec",
+      label: "Schema",
+      badge: "v1.0",
+      items: [
+        { id: 'overview', text: 'Overview' },
+        { id: 'design-goals', text: 'Design Goals' },
+        { id: 'annotation-object', text: 'Annotation Object' },
+        { id: 'typescript-definition', text: 'TypeScript' },
+        { id: 'event-envelope', text: 'Event Envelope' },
+        { id: 'json-schema', text: 'JSON Schema' },
+        { id: 'example', text: 'Example' },
+        { id: 'markdown-output', text: 'Markdown Output' },
+        { id: 'implementations', text: 'Implementations' },
+        { id: 'building', text: 'Building' },
+        { id: 'why', text: 'Why This Format?' },
+        { id: 'versioning', text: 'Versioning' },
+      ],
+    },
     { href: "/features", label: "Features" },
     { href: "/output", label: "Output" },
     { href: "/protocol", label: "MCP" },
@@ -392,16 +412,48 @@ export function SideNav() {
     <nav className="side-nav">
       <TypedLogo isForensic={isForensic && pathname === '/output'} isOverview={pathname === '/'} />
       <div className="nav-links">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`nav-link ${pathname === link.href ? "active" : ""}`}
-          >
-            {link.label}
-            {link.badge && <span className="nav-badge">{link.badge}</span>}
-          </Link>
-        ))}
+        {links.map((link) => {
+          const isActive = pathname === link.href;
+          const hasItems = 'items' in link && link.items && link.items.length > 0;
+
+          return (
+            <div key={link.href} className="nav-item-wrapper">
+              <Link
+                href={link.href}
+                className={`nav-link ${isActive ? "active" : ""}`}
+              >
+                {link.label}
+                {link.badge && <span className="nav-badge">{link.badge}</span>}
+              </Link>
+
+              {/* Animated expand for TOC sub-items */}
+              <Motion.Config
+                transition={{
+                  type: 'spring',
+                  damping: 18,
+                  mass: 0.2,
+                  stiffness: 280,
+                }}
+              >
+                <Motion.Presence mode="sync">
+                  {isActive && hasItems && (
+                    <Motion.Height>
+                      <TOC
+                        headings={link.items!.map((item) => ({
+                          id: item.id,
+                          level: 1,
+                          text: item.text,
+                        }))}
+                        title=""
+                        className="nav-toc"
+                      />
+                    </Motion.Height>
+                  )}
+                </Motion.Presence>
+              </Motion.Config>
+            </div>
+          );
+        })}
       </div>
       <div className="nav-meta">
         {npmVersion && (

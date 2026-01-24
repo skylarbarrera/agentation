@@ -107,7 +107,7 @@ export default function SpecPage() {
       <article className="article">
         <header>
           <h1>
-            Annotation Schema{" "}
+            Agentation Format{" "}
             <span
               style={{
                 fontFamily: "var(--font-primary)",
@@ -131,11 +131,11 @@ export default function SpecPage() {
         </header>
 
         <section>
-          <h2>Overview</h2>
+          <h2 id="overview">Overview</h2>
           <p>
-            The Structured Annotation Format (SAF) is an open schema for capturing
-            UI feedback in a way that AI coding agents can reliably parse and act on.
-            It bridges the gap between what humans see in a browser and what agents
+            The Agentation Format is an open schema for capturing UI feedback
+            in a way that AI coding agents can reliably parse and act on. It
+            bridges the gap between what humans see in a browser and what agents
             need to locate and fix code.
           </p>
           <p>
@@ -145,7 +145,7 @@ export default function SpecPage() {
         </section>
 
         <section>
-          <h2>Design Goals</h2>
+          <h2 id="design-goals">Design Goals</h2>
           <ul>
             <li><strong>Agent-readable</strong> &mdash; Structured data that LLMs can parse without guessing</li>
             <li><strong>Framework-agnostic</strong> &mdash; Works with any UI, though React gets extra context</li>
@@ -156,7 +156,7 @@ export default function SpecPage() {
         </section>
 
         <section>
-          <h2>Annotation Object</h2>
+          <h2 id="annotation-object">Annotation Object</h2>
           <p>
             An annotation represents a single piece of feedback attached to a UI element.
           </p>
@@ -225,7 +225,7 @@ export default function SpecPage() {
         </section>
 
         <section>
-          <h2>Full TypeScript Definition</h2>
+          <h2 id="typescript-definition">Full TypeScript Definition</h2>
           <CodeBlock
             language="typescript"
             copyable
@@ -275,14 +275,14 @@ type ThreadMessage = {
         </section>
 
         <section>
-          <h2>Event Envelope</h2>
+          <h2 id="event-envelope">Event Envelope</h2>
           <p>
             For real-time streaming, annotations are wrapped in an event envelope:
           </p>
           <CodeBlock
             language="typescript"
             copyable
-            code={`type SAFEvent = {
+            code={`type AgentationEvent = {
   type: "annotation.created" | "annotation.updated" | "annotation.deleted"
       | "session.created" | "session.updated" | "session.closed"
       | "thread.message";
@@ -299,7 +299,7 @@ type ThreadMessage = {
         </section>
 
         <section>
-          <h2>JSON Schema</h2>
+          <h2 id="json-schema">JSON Schema</h2>
           <p>
             For validation in any language:
           </p>
@@ -339,7 +339,7 @@ type ThreadMessage = {
         </section>
 
         <section>
-          <h2>Example Annotation</h2>
+          <h2 id="example">Example Annotation</h2>
           <CodeBlock
             language="json"
             code={`{
@@ -361,7 +361,7 @@ type ThreadMessage = {
         </section>
 
         <section>
-          <h2>Markdown Output Format</h2>
+          <h2 id="markdown-output">Markdown Output Format</h2>
           <p>
             For pasting into chat-based agents, annotations can be serialized as markdown:
           </p>
@@ -381,7 +381,7 @@ type ThreadMessage = {
         </section>
 
         <section>
-          <h2>Implementations</h2>
+          <h2 id="implementations">Implementations</h2>
           <p>
             Tools that emit or consume this format:
           </p>
@@ -403,22 +403,14 @@ type ThreadMessage = {
                   Exposes annotations to Claude Code and other MCP clients
                 </td>
               </tr>
-              <tr>
-                <td style={{ padding: "0.5rem 0", fontWeight: 500, color: "rgba(0,0,0,0.4)" }}>
-                  Your tool here
-                </td>
-                <td style={{ padding: "0.5rem 0", color: "rgba(0,0,0,0.4)", textAlign: "right" }}>
-                  Emit SAF annotations from browser extensions, testing tools, etc.
-                </td>
-              </tr>
             </tbody>
           </table>
         </section>
 
         <section>
-          <h2>Building an Implementation</h2>
+          <h2 id="building">Building an Implementation</h2>
           <p>
-            To emit SAF-compatible annotations from your tool:
+            To emit Agentation Format annotations from your tool:
           </p>
           <ol style={{ paddingLeft: "1.25rem" }}>
             <li>Capture the required fields: <code>id</code>, <code>comment</code>, <code>elementPath</code>, <code>timestamp</code></li>
@@ -433,29 +425,23 @@ type ThreadMessage = {
         </section>
 
         <section>
-          <h2>Why This Format?</h2>
+          <h2 id="why">Why This Format?</h2>
           <p>
             Existing agent protocols (MCP, A2A, ACP) standardize tools and messaging, but
             they don&apos;t define a UI feedback grammar. They rely on whatever structured
             context you feed them.
           </p>
           <p>
-            SAF fills that gap: a portable wire format specifically for &quot;human points at UI,
-            agent needs to find and fix the code.&quot; The first format that ships broadly,
-            is simple, and works across agents tends to become the standard.
+            This format fills that gap: a portable wire format specifically for &quot;human points at UI,
+            agent needs to find and fix the code.&quot; We hope it&apos;s useful to others building similar tools.
           </p>
         </section>
 
         <section>
-          <h2>Versioning</h2>
+          <h2 id="versioning">Versioning</h2>
           <p>
-            This is <strong>v1.0</strong> of the Structured Annotation Format.
+            Current version: <strong>v1</strong>
           </p>
-          <ul>
-            <li>Required fields will not change in v1.x</li>
-            <li>New optional fields may be added in minor versions</li>
-            <li>Breaking changes require a major version bump</li>
-          </ul>
           <p style={{ fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)", marginTop: "0.75rem" }}>
             Schema URL: <code>https://agentation.dev/schema/annotation.v1.json</code>
           </p>

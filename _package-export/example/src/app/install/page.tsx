@@ -144,7 +144,8 @@ function App() {
               marginTop: "0.5rem",
             }}
           >
-            The component syncs annotations to the server automatically. Any MCP-compatible
+            The component syncs annotations to the server automatically, including any
+            existing annotations from before the server was running. Any MCP-compatible
             agent can then read them via the exposed tools.
           </p>
 

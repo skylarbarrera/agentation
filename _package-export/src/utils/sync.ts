@@ -68,6 +68,27 @@ export async function syncAnnotation(
 }
 
 /**
+ * Update an annotation on the server.
+ */
+export async function updateAnnotation(
+  endpoint: string,
+  annotationId: string,
+  data: Partial<Annotation>
+): Promise<Annotation> {
+  const response = await fetch(`${endpoint}/annotations/${annotationId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to update annotation: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
  * Delete an annotation from the server.
  */
 export async function deleteAnnotation(

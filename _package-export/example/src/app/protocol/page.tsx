@@ -345,11 +345,70 @@ await agentation_resolve({
           </p>
           <ul>
             <li><code>POST /sessions</code> &mdash; Create a new session</li>
-            <li><code>POST /annotations</code> &mdash; Add an annotation</li>
+            <li><code>GET /sessions/:id</code> &mdash; Get session with annotations</li>
+            <li><code>POST /sessions/:id/annotations</code> &mdash; Add an annotation</li>
+            <li><code>GET /sessions/:id/events</code> &mdash; SSE stream of events</li>
             <li><code>GET /health</code> &mdash; Server health check</li>
           </ul>
           <p style={{ fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)", marginTop: "0.5rem" }}>
             The React component handles this automatically when you set the <code>endpoint</code> prop.
+          </p>
+        </section>
+
+        <section>
+          <h2>Real-Time Events (SSE)</h2>
+          <p>
+            Subscribe to real-time events via Server-Sent Events:
+          </p>
+          <CodeBlock
+            language="bash"
+            code={`# Session-level: events for a single page
+curl -N http://localhost:4747/sessions/:id/events
+
+# Site-level: events across ALL pages for a domain
+curl -N "http://localhost:4747/events?domain=localhost:3001"
+
+# Reconnect after disconnect (replay missed events)
+curl -N -H "Last-Event-ID: 42" http://localhost:4747/sessions/:id/events`}
+          />
+          <p style={{ marginTop: "0.75rem" }}>
+            Events are wrapped in the <a href="/spec">SAFEvent envelope</a>:
+          </p>
+          <CodeBlock
+            language="typescript"
+            code={`event: annotation.created
+id: 42
+data: {"type":"annotation.created","sessionId":"sess_abc","sequence":42,"payload":{...}}`}
+          />
+          <p style={{ marginTop: "0.75rem" }}>
+            <strong>Event types:</strong>
+          </p>
+          <ul style={{ fontSize: "0.8125rem", color: "rgba(0,0,0,0.65)", marginTop: "0.25rem" }}>
+            <li><code>annotation.created</code> &mdash; New annotation added</li>
+            <li><code>annotation.updated</code> &mdash; Annotation modified (comment, status, etc.)</li>
+            <li><code>annotation.deleted</code> &mdash; Annotation removed</li>
+            <li><code>session.created</code> &mdash; New session started</li>
+            <li><code>session.updated</code> &mdash; Session status changed</li>
+            <li><code>session.closed</code> &mdash; Session closed</li>
+            <li><code>thread.message</code> &mdash; New message in annotation thread</li>
+          </ul>
+          <p style={{ fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)", marginTop: "0.5rem" }}>
+            Use <code>Last-Event-ID</code> header to resume from a specific sequence number after disconnect.
+            The server stores events for 7 days (configurable via <code>AGENTATION_EVENT_RETENTION_DAYS</code>).
+          </p>
+        </section>
+
+        <section>
+          <h2>Persistence</h2>
+          <p>
+            Sessions and annotations persist to SQLite by default:
+          </p>
+          <CodeBlock
+            language="bash"
+            code={`~/.agentation/store.db   # SQLite database`}
+          />
+          <p style={{ fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)", marginTop: "0.5rem" }}>
+            Set <code>AGENTATION_STORE=memory</code> to use in-memory storage (no persistence).
           </p>
         </section>
       </article>

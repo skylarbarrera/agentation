@@ -55,6 +55,7 @@ import {
   createSession,
   getSession,
   syncAnnotation,
+  updateAnnotation as updateAnnotationOnServer,
   deleteAnnotation as deleteAnnotationFromServer,
 } from "../../utils/sync";
 import { getReactComponentName } from "../../utils/react-detection";
@@ -1532,6 +1533,13 @@ export function PageFeedbackToolbarCSS({
       // Fire callback
       onAnnotationUpdate?.(updatedAnnotation);
 
+      // Sync update to server (non-blocking)
+      if (endpoint) {
+        updateAnnotationOnServer(endpoint, editingAnnotation.id, { comment: newComment }).catch((error) => {
+          console.warn("[Agentation] Failed to update annotation on server:", error);
+        });
+      }
+
       // Animate out the edit popup
       setEditExiting(true);
       setTimeout(() => {
@@ -1539,7 +1547,7 @@ export function PageFeedbackToolbarCSS({
         setEditExiting(false);
       }, 150);
     },
-    [editingAnnotation, onAnnotationUpdate],
+    [editingAnnotation, onAnnotationUpdate, endpoint],
   );
 
   // Cancel editing with exit animation
@@ -1559,6 +1567,17 @@ export function PageFeedbackToolbarCSS({
     // Fire callback with all annotations before clearing
     onAnnotationsClear?.(annotations);
 
+    // Sync deletions to server (non-blocking)
+    if (endpoint) {
+      Promise.all(
+        annotations.map((a) =>
+          deleteAnnotationFromServer(endpoint, a.id).catch((error) => {
+            console.warn("[Agentation] Failed to delete annotation from server:", error);
+          })
+        )
+      );
+    }
+
     setIsClearing(true);
     setCleared(true);
 
@@ -1571,7 +1590,7 @@ export function PageFeedbackToolbarCSS({
     }, totalAnimationTime);
 
     setTimeout(() => setCleared(false), 1500);
-  }, [pathname, annotations, onAnnotationsClear]);
+  }, [pathname, annotations, onAnnotationsClear, endpoint]);
 
   // Copy output
   const copyOutput = useCallback(async () => {

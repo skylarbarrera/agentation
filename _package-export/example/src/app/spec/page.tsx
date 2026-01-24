@@ -270,6 +270,30 @@ type ThreadMessage = {
         </section>
 
         <section>
+          <h2>Event Envelope</h2>
+          <p>
+            For real-time streaming, annotations are wrapped in an event envelope:
+          </p>
+          <CodeBlock
+            language="typescript"
+            copyable
+            code={`type SAFEvent = {
+  type: "annotation.created" | "annotation.updated" | "annotation.deleted"
+      | "session.created" | "session.updated" | "session.closed"
+      | "thread.message";
+  timestamp: string;     // ISO 8601
+  sessionId: string;
+  sequence: number;      // Monotonic for ordering/replay
+  payload: Annotation | Session | ThreadMessage;
+};`}
+          />
+          <p style={{ fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)", marginTop: "0.5rem" }}>
+            The <code>sequence</code> number enables clients to detect missed events and request replay.
+            See <a href="/protocol">Protocol</a> for SSE streaming details.
+          </p>
+        </section>
+
+        <section>
           <h2>JSON Schema</h2>
           <p>
             For validation in any language:

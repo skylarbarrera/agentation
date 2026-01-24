@@ -6,15 +6,22 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "http";
 import {
   createSession,
+  getSession,
   getSessionWithAnnotations,
   addAnnotation,
   updateAnnotation,
   getAnnotation,
+  deleteAnnotation,
   listSessions,
   getPendingAnnotations,
   addThreadMessage,
+  getEventsSince,
 } from "./store.js";
-import type { Annotation } from "../types.js";
+import { eventBus } from "./events.js";
+import type { Annotation, SAFEvent } from "../types.js";
+
+// Track active SSE connections for cleanup
+const sseConnections = new Set<ServerResponse>();
 
 // -----------------------------------------------------------------------------
 // Request Helpers
@@ -177,6 +184,19 @@ const getAnnotationHandler: RouteHandler = async (_req, res, params) => {
 };
 
 /**
+ * DELETE /annotations/:id - Delete an annotation.
+ */
+const deleteAnnotationHandler: RouteHandler = async (_req, res, params) => {
+  const annotation = deleteAnnotation(params.id);
+
+  if (!annotation) {
+    return sendError(res, 404, "Annotation not found");
+  }
+
+  sendJson(res, 200, { deleted: true, annotationId: params.id });
+};
+
+/**
  * GET /sessions/:id/pending - Get pending annotations for a session.
  */
 const getPendingHandler: RouteHandler = async (_req, res, params) => {
@@ -207,6 +227,131 @@ const addThreadHandler: RouteHandler = async (req, res, params) => {
   }
 };
 
+/**
+ * GET /sessions/:id/events - SSE stream of events for a session.
+ *
+ * Supports reconnection via Last-Event-ID header.
+ * Events are streamed in real-time as they occur.
+ */
+const sseHandler: RouteHandler = async (req, res, params) => {
+  const sessionId = params.id;
+
+  // Verify session exists
+  const session = getSessionWithAnnotations(sessionId);
+  if (!session) {
+    return sendError(res, 404, "Session not found");
+  }
+
+  // Set up SSE headers
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+    "Access-Control-Allow-Origin": "*",
+  });
+
+  // Track this connection
+  sseConnections.add(res);
+
+  // Send initial comment to establish connection
+  res.write(": connected\n\n");
+
+  // Check for Last-Event-ID for replay
+  const lastEventId = req.headers["last-event-id"];
+  if (lastEventId) {
+    const lastSequence = parseInt(lastEventId as string, 10);
+    if (!isNaN(lastSequence)) {
+      // Replay missed events
+      const missedEvents = getEventsSince(sessionId, lastSequence);
+      for (const event of missedEvents) {
+        sendSSEEvent(res, event);
+      }
+    }
+  }
+
+  // Subscribe to new events
+  const unsubscribe = eventBus.subscribeToSession(sessionId, (event: SAFEvent) => {
+    sendSSEEvent(res, event);
+  });
+
+  // Keep connection alive with periodic comments
+  const keepAlive = setInterval(() => {
+    res.write(": ping\n\n");
+  }, 30000);
+
+  // Clean up on disconnect
+  req.on("close", () => {
+    clearInterval(keepAlive);
+    unsubscribe();
+    sseConnections.delete(res);
+  });
+};
+
+/**
+ * Send an SSE event to a response stream.
+ */
+function sendSSEEvent(res: ServerResponse, event: SAFEvent): void {
+  res.write(`event: ${event.type}\n`);
+  res.write(`id: ${event.sequence}\n`);
+  res.write(`data: ${JSON.stringify(event)}\n\n`);
+}
+
+/**
+ * GET /events?domain=... - Site-level SSE stream.
+ *
+ * Aggregates events from all sessions matching the domain.
+ * Useful for agents that need to track feedback across page navigations.
+ */
+const globalSseHandler: RouteHandler = async (req, res) => {
+  const url = new URL(req.url || "/", "http://localhost");
+  const domain = url.searchParams.get("domain");
+
+  if (!domain) {
+    return sendError(res, 400, "domain query parameter required");
+  }
+
+  // Set up SSE headers
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+    "Access-Control-Allow-Origin": "*",
+  });
+
+  // Track this connection
+  sseConnections.add(res);
+
+  // Send initial comment to establish connection
+  res.write(`: connected to domain ${domain}\n\n`);
+
+  // Subscribe to all events, filter by domain
+  const unsubscribe = eventBus.subscribe((event: SAFEvent) => {
+    const session = getSession(event.sessionId);
+    if (session) {
+      try {
+        const sessionHost = new URL(session.url).host;
+        if (sessionHost === domain) {
+          sendSSEEvent(res, event);
+        }
+      } catch {
+        // Invalid URL, skip
+      }
+    }
+  });
+
+  // Keep connection alive with periodic comments
+  const keepAlive = setInterval(() => {
+    res.write(": ping\n\n");
+  }, 30000);
+
+  // Clean up on disconnect
+  req.on("close", () => {
+    clearInterval(keepAlive);
+    unsubscribe();
+    sseConnections.delete(res);
+  });
+};
+
 // -----------------------------------------------------------------------------
 // Router
 // -----------------------------------------------------------------------------
@@ -219,6 +364,12 @@ type Route = {
 };
 
 const routes: Route[] = [
+  {
+    method: "GET",
+    pattern: /^\/events$/,
+    handler: globalSseHandler,
+    paramNames: [],
+  },
   {
     method: "GET",
     pattern: /^\/sessions$/,
@@ -235,6 +386,12 @@ const routes: Route[] = [
     method: "GET",
     pattern: /^\/sessions\/([^/]+)$/,
     handler: getSessionHandler,
+    paramNames: ["id"],
+  },
+  {
+    method: "GET",
+    pattern: /^\/sessions\/([^/]+)\/events$/,
+    handler: sseHandler,
     paramNames: ["id"],
   },
   {
@@ -259,6 +416,12 @@ const routes: Route[] = [
     method: "GET",
     pattern: /^\/annotations\/([^/]+)$/,
     handler: getAnnotationHandler,
+    paramNames: ["id"],
+  },
+  {
+    method: "DELETE",
+    pattern: /^\/annotations\/([^/]+)$/,
+    handler: deleteAnnotationHandler,
     paramNames: ["id"],
   },
   {

@@ -74,3 +74,67 @@ export type ThreadMessage = {
   content: string;
   timestamp: number;
 };
+
+// -----------------------------------------------------------------------------
+// Events (for real-time streaming)
+// -----------------------------------------------------------------------------
+
+export type SAFEventType =
+  | "annotation.created"
+  | "annotation.updated"
+  | "annotation.deleted"
+  | "session.created"
+  | "session.updated"
+  | "session.closed"
+  | "thread.message";
+
+export type SAFEvent = {
+  type: SAFEventType;
+  timestamp: string; // ISO 8601
+  sessionId: string;
+  sequence: number; // Monotonic for ordering/dedup/replay
+  payload: Annotation | Session | ThreadMessage;
+};
+
+// -----------------------------------------------------------------------------
+// Store Interface
+// -----------------------------------------------------------------------------
+
+export interface SAFStore {
+  // Sessions
+  createSession(url: string, projectId?: string): Session;
+  getSession(id: string): Session | undefined;
+  getSessionWithAnnotations(id: string): SessionWithAnnotations | undefined;
+  updateSessionStatus(id: string, status: SessionStatus): Session | undefined;
+  listSessions(): Session[];
+
+  // Annotations
+  addAnnotation(
+    sessionId: string,
+    data: Omit<Annotation, "id" | "sessionId" | "status" | "createdAt">
+  ): Annotation | undefined;
+  getAnnotation(id: string): Annotation | undefined;
+  updateAnnotation(
+    id: string,
+    data: Partial<Omit<Annotation, "id" | "sessionId" | "createdAt">>
+  ): Annotation | undefined;
+  updateAnnotationStatus(
+    id: string,
+    status: AnnotationStatus,
+    resolvedBy?: "human" | "agent"
+  ): Annotation | undefined;
+  addThreadMessage(
+    annotationId: string,
+    role: "human" | "agent",
+    content: string
+  ): Annotation | undefined;
+  getPendingAnnotations(sessionId: string): Annotation[];
+  getSessionAnnotations(sessionId: string): Annotation[];
+  deleteAnnotation(id: string): Annotation | undefined;
+
+  // Events (for replay on reconnect)
+  getEventsSince(sessionId: string, sequence: number): SAFEvent[];
+
+  // Lifecycle
+  close(): void;
+}

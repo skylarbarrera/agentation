@@ -34,6 +34,9 @@ export type Annotation = {
   resolvedAt?: string;
   resolvedBy?: "human" | "agent";
   authorId?: string;
+
+  // Local-only sync tracking (not sent to server)
+  _syncedTo?: string; // Session ID this annotation was synced to
 };
 
 // -----------------------------------------------------------------------------

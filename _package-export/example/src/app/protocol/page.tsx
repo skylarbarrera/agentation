@@ -34,7 +34,8 @@ export default function ProtocolPage() {
           />
           <p style={{ fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)", marginTop: "0.75rem" }}>
             This starts both the MCP server (for agents) and HTTP server (for the browser toolbar).
-            The toolbar connects automatically when the server is running.
+            The toolbar connects automatically when the server is running, syncing any local annotations
+            and rejoining its previous session on page refresh.
           </p>
         </section>
 

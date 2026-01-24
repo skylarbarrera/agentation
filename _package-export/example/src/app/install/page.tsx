@@ -144,9 +144,9 @@ function App() {
               marginTop: "0.5rem",
             }}
           >
-            The component syncs annotations to the server automatically, including any
-            existing annotations from before the server was running. Any MCP-compatible
-            agent can then read them via the exposed tools.
+            Annotations are stored locally and synced to the server when connected.
+            The component remembers which session it was connected to and rejoins automatically on refresh.
+            Only new annotations are uploaded to prevent duplicates; server state takes precedence when rejoining.
           </p>
 
           <p style={{ marginTop: "1.5rem" }}>

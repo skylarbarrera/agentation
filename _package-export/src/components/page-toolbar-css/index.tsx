@@ -51,6 +51,10 @@ import {
   loadAllAnnotations,
   saveAnnotations,
   getStorageKey,
+  loadSessionId,
+  saveSessionId,
+  saveAnnotationsWithSyncMarker,
+  getUnsyncedAnnotations,
 } from "../../utils/storage";
 import {
   createSession,
@@ -579,34 +583,83 @@ export function PageFeedbackToolbarCSS({
 
     const initSession = async () => {
       try {
-        // Load existing localStorage annotations directly (avoids race condition with React state)
-        const existingLocal = loadAnnotations<Annotation>(pathname);
+        // Check for stored session ID to rejoin on refresh
+        const storedSessionId = loadSessionId(pathname);
+        const sessionIdToJoin = initialSessionId || storedSessionId;
 
-        if (initialSessionId) {
-          // Join existing session and load its annotations
-          const session = await getSession(endpoint, initialSessionId);
-          setCurrentSessionId(session.id);
-          setConnectionStatus("connected");
-          // Merge server annotations with local (server wins on conflict)
-          const serverIds = new Set(session.annotations.map((a) => a.id));
-          const localOnly = existingLocal.filter((a) => !serverIds.has(a.id));
-          setAnnotations([...session.annotations, ...localOnly]);
+        if (sessionIdToJoin) {
+          // Join existing session - server annotations are authoritative
+          try {
+            const session = await getSession(endpoint, sessionIdToJoin);
+            setCurrentSessionId(session.id);
+            setConnectionStatus("connected");
+            saveSessionId(pathname, session.id);
+
+            // Only merge local annotations that haven't been synced to THIS session
+            const unsyncedLocal = getUnsyncedAnnotations(pathname, session.id);
+            const serverIds = new Set(session.annotations.map((a) => a.id));
+            const localToMerge = unsyncedLocal.filter((a) => !serverIds.has(a.id));
+
+            // Sync unsynced local annotations to this session
+            if (localToMerge.length > 0) {
+              const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+              const pageUrl = `${baseUrl}${pathname}`;
+
+              const results = await Promise.allSettled(
+                localToMerge.map((annotation) =>
+                  syncAnnotation(endpoint, session.id, {
+                    ...annotation,
+                    sessionId: session.id,
+                    url: pageUrl,
+                  })
+                )
+              );
+
+              const syncedAnnotations = results.map((result, i) => {
+                if (result.status === "fulfilled") {
+                  return result.value;
+                }
+                console.warn("[Agentation] Failed to sync annotation:", result.reason);
+                return localToMerge[i];
+              });
+
+              // Mark merged annotations as synced
+              const allAnnotations = [...session.annotations, ...syncedAnnotations];
+              setAnnotations(allAnnotations);
+              saveAnnotationsWithSyncMarker(pathname, allAnnotations, session.id);
+            } else {
+              setAnnotations(session.annotations);
+              saveAnnotationsWithSyncMarker(pathname, session.annotations, session.id);
+            }
+          } catch (joinError) {
+            // Session doesn't exist or expired - fall through to create new
+            console.warn("[Agentation] Could not join session, creating new:", joinError);
+            // Clear the stored session ID since it's invalid
+            saveSessionId(pathname, "");
+            // Re-throw to trigger catch block which will retry without session ID
+            throw joinError;
+          }
         } else {
           // Create new session for current page
           const currentUrl = typeof window !== "undefined" ? window.location.href : "/";
           const session = await createSession(endpoint, currentUrl);
           setCurrentSessionId(session.id);
           setConnectionStatus("connected");
+          saveSessionId(pathname, session.id);
           onSessionCreated?.(session.id);
 
-          // Sync ALL localStorage annotations across all pages
+          // Only sync annotations that have never been synced (no _syncedTo marker)
           const allAnnotations = loadAllAnnotations<Annotation>();
           const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
           // Sync annotations from all pages in parallel
           const syncPromises: Promise<void>[] = [];
           for (const [pagePath, annotations] of allAnnotations) {
-            if (annotations.length === 0) continue;
+            // Filter to only unsynced annotations
+            const unsyncedAnnotations = annotations.filter(
+              (a) => !(a as Annotation & { _syncedTo?: string })._syncedTo
+            );
+            if (unsyncedAnnotations.length === 0) continue;
 
             const pageUrl = `${baseUrl}${pagePath}`;
             const isCurrentPage = pagePath === pathname;
@@ -620,7 +673,7 @@ export function PageFeedbackToolbarCSS({
                     : await createSession(endpoint, pageUrl);
 
                   const results = await Promise.allSettled(
-                    annotations.map((annotation) =>
+                    unsyncedAnnotations.map((annotation) =>
                       syncAnnotation(endpoint, targetSession.id, {
                         ...annotation,
                         sessionId: targetSession.id,
@@ -629,17 +682,20 @@ export function PageFeedbackToolbarCSS({
                     )
                   );
 
-                  // Update local state only for current page
-                  if (isCurrentPage) {
-                    const originalIds = new Set(annotations.map((a) => a.id));
-                    const syncedAnnotations = results.map((result, i) => {
-                      if (result.status === "fulfilled") {
-                        return result.value;
-                      }
-                      console.warn("[Agentation] Failed to sync annotation:", result.reason);
-                      return annotations[i];
-                    });
+                  // Mark synced annotations and update local state for current page
+                  const syncedAnnotations = results.map((result, i) => {
+                    if (result.status === "fulfilled") {
+                      return result.value;
+                    }
+                    console.warn("[Agentation] Failed to sync annotation:", result.reason);
+                    return unsyncedAnnotations[i];
+                  });
 
+                  // Save with sync marker
+                  saveAnnotationsWithSyncMarker(pagePath, syncedAnnotations, targetSession.id);
+
+                  if (isCurrentPage) {
+                    const originalIds = new Set(unsyncedAnnotations.map((a) => a.id));
                     setAnnotations((prev) => {
                       const newDuringSync = prev.filter((a) => !originalIds.has(a.id));
                       return [...syncedAnnotations, ...newDuringSync];

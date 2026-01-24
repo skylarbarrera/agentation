@@ -53,6 +53,7 @@ import {
   getStorageKey,
   loadSessionId,
   saveSessionId,
+  clearSessionId,
   saveAnnotationsWithSyncMarker,
   getUnsyncedAnnotations,
 } from "../../utils/storage";
@@ -635,7 +636,7 @@ export function PageFeedbackToolbarCSS({
             // Session doesn't exist or expired - fall through to create new
             console.warn("[Agentation] Could not join session, creating new:", joinError);
             // Clear the stored session ID since it's invalid
-            saveSessionId(pathname, "");
+            clearSessionId(pathname);
             // Re-throw to trigger catch block which will retry without session ID
             throw joinError;
           }

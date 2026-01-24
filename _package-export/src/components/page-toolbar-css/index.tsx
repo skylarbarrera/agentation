@@ -2231,30 +2231,44 @@ export function PageFeedbackToolbarCSS({
                 <span
                   className={`${styles.settingsLabel} ${!isDarkMode ? styles.light : ""}`}
                 >
-                  MCP Server
-                  <span
-                    className={styles.helpIcon}
-                    data-tooltip={
-                      connectionStatus === "connected"
-                        ? "Connected to MCP server"
-                        : connectionStatus === "connecting"
-                          ? "Connecting to MCP server..."
-                          : "MCP server not reachable"
-                    }
-                  >
-                    <IconHelp size={20} />
-                  </span>
+                  Agent Sync
+                  {endpoint && (
+                    <span
+                      className={styles.helpIcon}
+                      data-tooltip={
+                        connectionStatus === "connected"
+                          ? `Connected${currentSessionId ? ` (${currentSessionId.slice(0, 8)}...)` : ""}`
+                          : connectionStatus === "connecting"
+                            ? "Connecting..."
+                            : "Start the server with: npx agentation server"
+                      }
+                    >
+                      <IconHelp size={20} />
+                    </span>
+                  )}
                 </span>
-                <div
-                  className={`${styles.mcpStatusDot} ${styles[connectionStatus]}`}
-                  title={
-                    connectionStatus === "connected"
-                      ? "Connected"
-                      : connectionStatus === "connecting"
-                        ? "Connecting..."
-                        : "Disconnected"
-                  }
-                />
+                {endpoint ? (
+                  <div
+                    className={`${styles.mcpStatusDot} ${styles[connectionStatus]}`}
+                    title={
+                      connectionStatus === "connected"
+                        ? "Connected"
+                        : connectionStatus === "connecting"
+                          ? "Connecting..."
+                          : "Disconnected"
+                    }
+                  />
+                ) : (
+                  <a
+                    href="https://agentation.dev/install#mcp-server"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.settingsLink}
+                    style={{ color: "rgba(0,0,0,0.4)", fontSize: "0.75rem" }}
+                  >
+                    Learn more →
+                  </a>
+                )}
               </div>
             </div>
 

@@ -64,7 +64,11 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "Where are annotations stored?",
-        answer: "Annotations are stored in <code>localStorage</code>, keyed by page pathname. They persist across page refreshes but are cleared after 7 days or when you click \"Clear all\"."
+        answer: "By default, annotations are stored in <code>localStorage</code>, keyed by page pathname. They persist across page refreshes but are cleared after 7 days. With Agent Sync enabled, annotations are stored on the MCP server instead, which persists across pages and sessions."
+      },
+      {
+        question: "What is Agent Sync?",
+        answer: "Agent Sync connects the browser toolbar to an MCP server, enabling real-time sync between reviewers and AI agents. Annotations persist across pages and can be accessed via MCP tools. Run <code>npx agentation server</code> to start the server, then enable Agent Sync in settings."
       },
     ]
   },
@@ -81,7 +85,7 @@ const faqCategories: FAQCategory[] = [
       },
       {
         question: "Can multiple people share annotations?",
-        answer: "Annotations are stored locally in each user's browser, so they're not shared automatically. For collaboration, copy and share the markdown output directly."
+        answer: "With Agent Sync enabled, annotations sync to a shared server and can be accessed by multiple users or agents. Without Agent Sync, annotations are stored locally in each user's browser - you can still share by copying the markdown output."
       },
     ]
   },

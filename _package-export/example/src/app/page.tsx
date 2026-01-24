@@ -77,7 +77,7 @@ export default function AgentationDocs() {
       <article className="article">
         <header style={{ position: 'relative' }}>
           <InstallSnippet />
-          <h1 style={{ fontSize: '2rem', lineHeight: 1.15, marginBottom: '0.5rem' }}>Point at bugs.<br /><span className="sketchy-underline">Let AI fix them.</span></h1>
+          <h1 style={{ fontSize: '2rem', lineHeight: 1.15, marginBottom: '0.5rem' }}><span className="sketchy-underline">Point at bugs.</span><br />Let AI <span className="pen-underline">fix them.</span></h1>
           <p className="tagline">Agentation turns UI annotations into structured context that AI coding agents can understand and act on. Click any element, add a note, and paste the output into Claude Code, Cursor, or any AI tool.</p>
         </header>
 
@@ -85,7 +85,7 @@ export default function AgentationDocs() {
         <HeroDemo />
 
         <section>
-          <h2>Quick start</h2>
+          <h2>How you use it</h2>
           <ol>
             <li>Click the <svg style={{ display: 'inline-block', verticalAlign: '-0.45em', width: '1.5em', height: '1.5em', margin: '0 -0.1em' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11.5 12L5.5 12" /><path d="M18.5 6.75L5.5 6.75" /><path d="M9.25 17.25L5.5 17.25" /><path d="M16 12.75L16.5179 13.9677C16.8078 14.6494 17.3506 15.1922 18.0323 15.4821L19.25 16L18.0323 16.5179C17.3506 16.8078 16.8078 17.3506 16.5179 18.0323L16 19.25L15.4821 18.0323C15.1922 17.3506 14.6494 16.8078 13.9677 16.5179L12.75 16L13.9677 15.4821C14.6494 15.1922 15.1922 14.6494 15.4821 13.9677L16 12.75Z" /></svg> icon in the bottom-right corner to activate</li>
             <li><strong>Hover</strong> over elements to see their names highlighted</li>
@@ -97,22 +97,18 @@ export default function AgentationDocs() {
         </section>
 
         <section>
-          <h2>How it works with agents</h2>
+          <h2>How agents use it</h2>
           <p>
-            Agentation works best with AI tools that have access to your codebase
-            (Claude Code, Cursor, Windsurf, etc.):
+            Agentation works best with AI tools that have access to your codebase (Claude Code, Cursor, etc.). When you paste the output, agents get:
           </p>
-          <ol>
-            <li>You see a bug or want a change in your running app</li>
-            <li>Use Agentation to annotate the element with your feedback</li>
-            <li>Copy the output and paste it into your agent</li>
-            <li>The agent uses the class names and selectors to <strong>search your codebase</strong></li>
-            <li>It finds the relevant component/file and makes the fix</li>
-          </ol>
+          <ul>
+            <li><strong>CSS selectors</strong> to grep your codebase</li>
+            <li><strong>React component names</strong> to find the right file</li>
+            <li><strong>Computed styles</strong> to understand current appearance</li>
+            <li><strong>Your feedback</strong> with intent and priority</li>
+          </ul>
           <p>
-            Without Agentation, you&rsquo;d have to describe the element (&ldquo;the blue button
-            in the sidebar&rdquo;) and hope the agent guesses right. With Agentation, you give it
-            <code>.sidebar &gt; .nav-actions &gt; button.primary</code> and it can grep for that directly.
+            Without Agentation, you&rsquo;d have to describe the element (&ldquo;the blue button in the sidebar&rdquo;) and hope the agent guesses right. With Agentation, you give it <code>.sidebar &gt; button.primary</code> and it can grep for that directly.
           </p>
         </section>
 

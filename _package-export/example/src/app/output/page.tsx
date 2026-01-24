@@ -235,15 +235,19 @@ export default function OutputPage() {
       </section>
 
       <section>
+        <h2>React component detection</h2>
+        <p>
+          In React apps, the output can include the component tree for each annotated element
+          (e.g., <code>&lt;App&gt; &lt;Dashboard&gt; &lt;SubmitButton&gt;</code>).
+          This helps agents find the right component file directly. Toggle this in <a href="/features">settings</a>.
+        </p>
+      </section>
+
+      <section>
         <h2>Why structured output?</h2>
         <p>
-          The output includes searchable selectors and class names that agents can <code>grep</code> for
-          in your codebase to find the exact component.
-        </p>
-        <p>
-          Without Agentation, you&rsquo;d have to describe the element (&ldquo;the blue button
-          in the sidebar&rdquo;) and hope the agent guesses right. With Agentation, you give it
-          <code>.sidebar &gt; .nav-actions &gt; button.primary</code> and it can search for that directly.
+          Selectors and class names let agents <code>grep</code> your codebase directly instead of guessing which element you mean.
+          See <a href="/">how it works</a> for more.
         </p>
       </section>
 

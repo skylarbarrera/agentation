@@ -412,7 +412,6 @@ export function SideNav() {
         { id: 'react-detection', text: 'React Detection' },
         { id: 'keyboard-shortcuts', text: 'Keyboard Shortcuts' },
         { id: 'settings', text: 'Settings' },
-        { id: 'limitations', text: 'Limitations' },
       ],
     },
     { href: "/output", label: "Output" },
@@ -421,7 +420,7 @@ export function SideNav() {
       label: "MCP",
       items: [
         { id: 'quick-start', text: 'Quick Start' },
-        { id: 'why-structured-feedback', text: 'Why Structured Feedback?' },
+        { id: 'why-structured-feedback', text: 'Why Structure?' },
         { id: 'how-it-works', text: 'How It Works' },
         { id: 'annotation-lifecycle', text: 'Annotation Lifecycle' },
         { id: 'mcp-tools', text: 'MCP Tools' },

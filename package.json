@@ -7,5 +7,11 @@
     "build": "pnpm --filter agentation build",
     "example": "pnpm --filter feedback-tool-example dev",
     "pack": "cd _package-export && pnpm pack"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild"
+    ]
   }
 }

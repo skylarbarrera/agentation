@@ -1479,10 +1479,9 @@ $green: #34c759;
     animation: mcpPulse 1.5s infinite;
   }
 
-  // Connected state
+  // Connected state - solid, no animation (calm = good)
   &.connected {
     background: $green;
-    animation: mcpPulse 2s infinite;
   }
 
   // Disconnected/error state

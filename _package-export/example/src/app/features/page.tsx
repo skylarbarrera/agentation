@@ -119,15 +119,15 @@ export default function FeaturesPage() {
         <SettingsDemo />
       </section>
 
-      <section>
-        <h2 id="limitations">Limitations</h2>
-        <ul>
-          <li><strong>Desktop only</strong> &mdash; The tool requires a desktop browser, but you can still request mobile changes in your feedback</li>
-          <li><strong>Per-page storage</strong> &mdash; localStorage persists 7 days per page. Use the <a href="/install#agent-integration">MCP server</a> for cross-page persistence.</li>
-          <li><strong>Static positions</strong> &mdash; Markers don&rsquo;t update if layout changes</li>
-          <li><strong>No screenshots</strong> &mdash; Output is text-only (paste alongside screenshots if needed)</li>
-          <li><strong>CSS animations only</strong> &mdash; Pause works on CSS animations, not JS-driven animations (framer-motion, GSAP, etc.)</li>
-          <li><strong>React only</strong> &mdash; Currently requires React 18+</li>
+      <section className="limitations-section">
+        <h3 style={{ fontSize: '0.75rem', fontWeight: 500, color: 'rgba(0,0,0,0.45)', marginBottom: '0.5rem' }}>Limitations</h3>
+        <ul style={{ fontSize: '0.75rem', color: 'rgba(0,0,0,0.5)', lineHeight: 1.5 }}>
+          <li><strong>Desktop only</strong> &mdash; requires a desktop browser</li>
+          <li><strong>Per-page storage</strong> &mdash; localStorage persists 7 days. Use <a href="/install#agent-integration">MCP server</a> for cross-page persistence.</li>
+          <li><strong>Static positions</strong> &mdash; markers don&rsquo;t update if layout changes</li>
+          <li><strong>No screenshots</strong> &mdash; output is text-only</li>
+          <li><strong>CSS animations only</strong> &mdash; pause doesn&rsquo;t work on JS animations (framer-motion, GSAP)</li>
+          <li><strong>React 18+ only</strong></li>
         </ul>
       </section>
     </article>

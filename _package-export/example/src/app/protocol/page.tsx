@@ -39,7 +39,7 @@ export default function ProtocolPage() {
         </section>
 
         <section>
-          <h2 id="why-structured-feedback">Why Structured Feedback?</h2>
+          <h2 id="why-structured-feedback">Why Structure?</h2>
           <p>
             When a user clicks a misaligned button to report it, your agent receives the exact
             component path (<code>ProductPage &gt; AddToCartButton</code>), its CSS state,

@@ -45,3 +45,36 @@ export function clearAnnotations(pathname: string): void {
     // ignore
   }
 }
+
+/**
+ * Load all annotations from localStorage across all pages.
+ * Returns a map of pathname -> annotations.
+ */
+export function loadAllAnnotations<T = Annotation>(): Map<string, T[]> {
+  const result = new Map<string, T[]>();
+  if (typeof window === "undefined") return result;
+
+  try {
+    const cutoff = Date.now() - DEFAULT_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(STORAGE_PREFIX)) {
+        const pathname = key.slice(STORAGE_PREFIX.length);
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          const data = JSON.parse(stored);
+          const filtered = data.filter(
+            (a: { timestamp?: number }) => !a.timestamp || a.timestamp > cutoff
+          );
+          if (filtered.length > 0) {
+            result.set(pathname, filtered);
+          }
+        }
+      }
+    }
+  } catch {
+    // ignore errors
+  }
+
+  return result;
+}

@@ -48,6 +48,7 @@ import {
 } from "../../utils/element-identification";
 import {
   loadAnnotations,
+  loadAllAnnotations,
   saveAnnotations,
   getStorageKey,
 } from "../../utils/storage";
@@ -578,24 +579,80 @@ export function PageFeedbackToolbarCSS({
 
     const initSession = async () => {
       try {
+        // Load existing localStorage annotations directly (avoids race condition with React state)
+        const existingLocal = loadAnnotations<Annotation>(pathname);
+
         if (initialSessionId) {
           // Join existing session and load its annotations
           const session = await getSession(endpoint, initialSessionId);
           setCurrentSessionId(session.id);
           setConnectionStatus("connected");
           // Merge server annotations with local (server wins on conflict)
-          setAnnotations((prev) => {
-            const serverIds = new Set(session.annotations.map((a) => a.id));
-            const localOnly = prev.filter((a) => !serverIds.has(a.id));
-            return [...session.annotations, ...localOnly];
-          });
+          const serverIds = new Set(session.annotations.map((a) => a.id));
+          const localOnly = existingLocal.filter((a) => !serverIds.has(a.id));
+          setAnnotations([...session.annotations, ...localOnly]);
         } else {
-          // Create new session
-          const url = typeof window !== "undefined" ? window.location.href : "/";
-          const session = await createSession(endpoint, url);
+          // Create new session for current page
+          const currentUrl = typeof window !== "undefined" ? window.location.href : "/";
+          const session = await createSession(endpoint, currentUrl);
           setCurrentSessionId(session.id);
           setConnectionStatus("connected");
           onSessionCreated?.(session.id);
+
+          // Sync ALL localStorage annotations across all pages
+          const allAnnotations = loadAllAnnotations<Annotation>();
+          const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+
+          // Sync annotations from all pages in parallel
+          const syncPromises: Promise<void>[] = [];
+          for (const [pagePath, annotations] of allAnnotations) {
+            if (annotations.length === 0) continue;
+
+            const pageUrl = `${baseUrl}${pagePath}`;
+            const isCurrentPage = pagePath === pathname;
+
+            syncPromises.push(
+              (async () => {
+                try {
+                  // Use current session for current page, create new sessions for other pages
+                  const targetSession = isCurrentPage
+                    ? session
+                    : await createSession(endpoint, pageUrl);
+
+                  const results = await Promise.allSettled(
+                    annotations.map((annotation) =>
+                      syncAnnotation(endpoint, targetSession.id, {
+                        ...annotation,
+                        sessionId: targetSession.id,
+                        url: pageUrl,
+                      })
+                    )
+                  );
+
+                  // Update local state only for current page
+                  if (isCurrentPage) {
+                    const originalIds = new Set(annotations.map((a) => a.id));
+                    const syncedAnnotations = results.map((result, i) => {
+                      if (result.status === "fulfilled") {
+                        return result.value;
+                      }
+                      console.warn("[Agentation] Failed to sync annotation:", result.reason);
+                      return annotations[i];
+                    });
+
+                    setAnnotations((prev) => {
+                      const newDuringSync = prev.filter((a) => !originalIds.has(a.id));
+                      return [...syncedAnnotations, ...newDuringSync];
+                    });
+                  }
+                } catch (err) {
+                  console.warn(`[Agentation] Failed to sync annotations for ${pagePath}:`, err);
+                }
+              })()
+            );
+          }
+
+          await Promise.allSettled(syncPromises);
         }
       } catch (error) {
         // Network error - continue in local-only mode
@@ -605,7 +662,7 @@ export function PageFeedbackToolbarCSS({
     };
 
     initSession();
-  }, [endpoint, initialSessionId, mounted, onSessionCreated]);
+  }, [endpoint, initialSessionId, mounted, onSessionCreated, pathname]);
 
   // Periodic health check for server connection
   useEffect(() => {

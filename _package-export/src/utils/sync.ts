@@ -10,6 +10,17 @@
 import type { Annotation, Session, SessionWithAnnotations } from "../types";
 
 /**
+ * List all sessions from the server.
+ */
+export async function listSessions(endpoint: string): Promise<Session[]> {
+  const response = await fetch(`${endpoint}/sessions`);
+  if (!response.ok) {
+    throw new Error(`Failed to list sessions: ${response.status}`);
+  }
+  return response.json();
+}
+
+/**
  * Create a new session on the server.
  */
 export async function createSession(

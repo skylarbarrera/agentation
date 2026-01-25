@@ -1114,6 +1114,16 @@ $green: #34c759;
   &.light {
     color: rgba(0, 0, 0, 0.85);
   }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.settingsRowDisabled {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 @keyframes cycleTextIn {

@@ -62,6 +62,7 @@ import {
 import {
   createSession,
   getSession,
+  listSessions,
   syncAnnotation,
   updateAnnotation as updateAnnotationOnServer,
   deleteAnnotation as deleteAnnotationFromServer,
@@ -69,7 +70,7 @@ import {
 } from "../../utils/sync";
 import { getReactComponentName } from "../../utils/react-detection";
 
-import type { Annotation } from "../../types";
+import type { Annotation, Session } from "../../types";
 import styles from "./styles.module.scss";
 
 /**
@@ -224,6 +225,40 @@ function hexToRgba(hex: string, alpha: number): string {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  if (diffSec < 60) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return date.toLocaleDateString();
+}
+
+function truncateUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname;
+    // Show path, truncate if too long
+    if (path.length > 25) {
+      return "..." + path.slice(-22);
+    }
+    return path || "/";
+  } catch {
+    // If URL parsing fails, just truncate the string
+    if (url.length > 25) {
+      return "..." + url.slice(-22);
+    }
+    return url;
+  }
 }
 
 function getActiveButtonStyle(
@@ -458,6 +493,19 @@ export function PageFeedbackToolbarCSS({
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [showEntranceAnimation, setShowEntranceAnimation] = useState(false);
 
+  // Check if running on localhost - React detection only works locally
+  const isLocalhost =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1" ||
+      window.location.hostname === "0.0.0.0" ||
+      window.location.hostname.endsWith(".local"));
+
+  // Effective React mode - forced to "off" when not on localhost
+  const effectiveReactMode: ReactComponentMode = isLocalhost
+    ? settings.reactComponentMode
+    : "off";
+
   // Server sync state
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(
     initialSessionId ?? null
@@ -466,6 +514,7 @@ export function PageFeedbackToolbarCSS({
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">(
     endpoint ? "connecting" : "disconnected"
   );
+  const [availableSessions, setAvailableSessions] = useState<Session[]>([]);
 
   // Draggable toolbar state
   const [toolbarPosition, setToolbarPosition] = useState<{
@@ -779,6 +828,29 @@ export function PageFeedbackToolbarCSS({
     return () => clearInterval(interval);
   }, [endpoint, mounted]);
 
+  // Fetch available sessions when connected
+  useEffect(() => {
+    if (!endpoint || connectionStatus !== "connected") return;
+
+    const fetchSessions = async () => {
+      try {
+        const sessions = await listSessions(endpoint);
+        // Sort by createdAt descending (newest first)
+        sessions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setAvailableSessions(sessions);
+      } catch (error) {
+        console.warn("[Agentation] Failed to fetch sessions:", error);
+      }
+    };
+
+    // Fetch immediately on connection
+    fetchSessions();
+
+    // Refresh every 30 seconds while connected, or more frequently while panel is open
+    const interval = setInterval(fetchSessions, showSettings ? 10000 : 30000);
+    return () => clearInterval(interval);
+  }, [endpoint, connectionStatus, showSettings]);
+
   // Demo annotations
   useEffect(() => {
     if (!enableDemoMode) return;
@@ -995,7 +1067,7 @@ export function PageFeedbackToolbarCSS({
 
       const { name, elementName, path, reactComponents } = identifyElementWithReact(
         elementUnder,
-        settings.reactComponentMode,
+        effectiveReactMode,
       );
       const rect = elementUnder.getBoundingClientRect();
 
@@ -1005,7 +1077,7 @@ export function PageFeedbackToolbarCSS({
 
     document.addEventListener("mousemove", handleMouseMove);
     return () => document.removeEventListener("mousemove", handleMouseMove);
-  }, [isActive, pendingAnnotation, settings.reactComponentMode]);
+  }, [isActive, pendingAnnotation, effectiveReactMode]);
 
   // Handle click
   useEffect(() => {
@@ -1062,7 +1134,7 @@ export function PageFeedbackToolbarCSS({
 
       const { name, path, reactComponents } = identifyElementWithReact(
         elementUnder,
-        settings.reactComponentMode,
+        effectiveReactMode,
       );
       const rect = elementUnder.getBoundingClientRect();
       const x = (e.clientX / window.innerWidth) * 100;
@@ -1114,7 +1186,7 @@ export function PageFeedbackToolbarCSS({
     pendingAnnotation,
     editingAnnotation,
     settings.blockInteractions,
-    settings.reactComponentMode,
+    effectiveReactMode,
   ]);
 
   // Multi-select drag - mousedown
@@ -1767,7 +1839,7 @@ export function PageFeedbackToolbarCSS({
 
   // Copy output
   const copyOutput = useCallback(async () => {
-    const output = generateOutput(annotations, pathname, settings.outputDetail, settings.reactComponentMode);
+    const output = generateOutput(annotations, pathname, settings.outputDetail, effectiveReactMode);
     if (!output) return;
 
     if (copyToClipboard) {
@@ -1791,7 +1863,7 @@ export function PageFeedbackToolbarCSS({
     annotations,
     pathname,
     settings.outputDetail,
-    settings.reactComponentMode,
+    effectiveReactMode,
     settings.autoClearAfterCopy,
     clearAll,
     copyToClipboard,
@@ -1806,7 +1878,7 @@ export function PageFeedbackToolbarCSS({
   const sendToAgent = useCallback(async () => {
     if (!endpoint || !currentSessionId || connectionStatus !== "connected") return;
 
-    const output = generateOutput(annotations, pathname, settings.outputDetail, settings.reactComponentMode);
+    const output = generateOutput(annotations, pathname, settings.outputDetail, effectiveReactMode);
     if (!output) return;
 
     try {
@@ -1833,7 +1905,7 @@ export function PageFeedbackToolbarCSS({
     annotations,
     pathname,
     settings.outputDetail,
-    settings.reactComponentMode,
+    effectiveReactMode,
   ]);
 
   // Toolbar dragging - mousemove and mouseup
@@ -2369,7 +2441,10 @@ export function PageFeedbackToolbarCSS({
                 </button>
               </div>
 
-              <div className={styles.settingsRow} style={{ marginTop: 4 }}>
+              <div
+                className={`${styles.settingsRow} ${!isLocalhost ? styles.settingsRowDisabled : ""}`}
+                style={{ marginTop: 4 }}
+              >
                 <div
                   className={`${styles.settingsLabel} ${!isDarkMode ? styles.light : ""}`}
                 >
@@ -2377,9 +2452,12 @@ export function PageFeedbackToolbarCSS({
                   <span
                     className={styles.helpIcon}
                     data-tooltip={
-                      REACT_MODE_OPTIONS.find(
-                        (opt) => opt.value === settings.reactComponentMode,
-                      )?.tooltip || "Show React component names in annotations"
+                      !isLocalhost
+                        ? "Only available on localhost"
+                        : REACT_MODE_OPTIONS.find(
+                            (opt) => opt.value === settings.reactComponentMode,
+                          )?.tooltip ||
+                          "Show React component names in annotations"
                     }
                   >
                     <IconHelp size={20} />
@@ -2387,7 +2465,9 @@ export function PageFeedbackToolbarCSS({
                 </div>
                 <button
                   className={`${styles.cycleButton} ${!isDarkMode ? styles.light : ""}`}
+                  disabled={!isLocalhost}
                   onClick={() => {
+                    if (!isLocalhost) return;
                     const currentIndex = REACT_MODE_OPTIONS.findIndex(
                       (opt) => opt.value === settings.reactComponentMode,
                     );
@@ -2400,20 +2480,20 @@ export function PageFeedbackToolbarCSS({
                   }}
                 >
                   <span
-                    key={settings.reactComponentMode}
+                    key={isLocalhost ? settings.reactComponentMode : "off"}
                     className={styles.cycleButtonText}
                   >
-                    {
-                      REACT_MODE_OPTIONS.find(
-                        (opt) => opt.value === settings.reactComponentMode,
-                      )?.label
-                    }
+                    {isLocalhost
+                      ? REACT_MODE_OPTIONS.find(
+                          (opt) => opt.value === settings.reactComponentMode,
+                        )?.label
+                      : "Off"}
                   </span>
                   <span className={styles.cycleDots}>
                     {REACT_MODE_OPTIONS.map((option) => (
                       <span
                         key={option.value}
-                        className={`${styles.cycleDot} ${!isDarkMode ? styles.light : ""} ${settings.reactComponentMode === option.value ? styles.active : ""}`}
+                        className={`${styles.cycleDot} ${!isDarkMode ? styles.light : ""} ${(isLocalhost ? settings.reactComponentMode : "off") === option.value ? styles.active : ""}`}
                       />
                     ))}
                   </span>
@@ -2549,6 +2629,65 @@ export function PageFeedbackToolbarCSS({
                   </span>
                 </button>
               </div>
+
+              {/* Session Switcher - only show when connected */}
+              {endpoint && connectionStatus === "connected" && (
+                <div className={styles.settingsRow} style={{ marginTop: 4 }}>
+                  <div
+                    className={`${styles.settingsLabel} ${!isDarkMode ? styles.light : ""}`}
+                  >
+                    Session
+                    <span
+                      className={styles.helpIcon}
+                      data-tooltip="Switch between annotation sessions"
+                    >
+                      <IconHelp size={20} />
+                    </span>
+                  </div>
+                  <button
+                    className={`${styles.cycleButton} ${!isDarkMode ? styles.light : ""}`}
+                    disabled={availableSessions.length <= 1}
+                    onClick={async () => {
+                      if (availableSessions.length <= 1) return;
+                      const currentIndex = availableSessions.findIndex(
+                        (s) => s.id === currentSessionId,
+                      );
+                      const nextIndex =
+                        (currentIndex + 1) % availableSessions.length;
+                      const nextSession = availableSessions[nextIndex];
+
+                      try {
+                        const session = await getSession(endpoint, nextSession.id);
+                        setCurrentSessionId(session.id);
+                        setAnnotations(session.annotations);
+                        saveSessionId(pathname, session.id);
+                        saveAnnotationsWithSyncMarker(pathname, session.annotations, session.id);
+                      } catch (error) {
+                        console.warn("[Agentation] Failed to switch session:", error);
+                      }
+                    }}
+                  >
+                    <span
+                      key={currentSessionId}
+                      className={styles.cycleButtonText}
+                      title={availableSessions.find(s => s.id === currentSessionId)?.url}
+                    >
+                      {truncateUrl(availableSessions.find(s => s.id === currentSessionId)?.url || pathname)}
+                    </span>
+                    {availableSessions.length > 1 && (
+                      <span className={styles.cycleDots}>
+                        {availableSessions.slice(0, 4).map((session) => (
+                          <span
+                            key={session.id}
+                            className={`${styles.cycleDot} ${!isDarkMode ? styles.light : ""} ${session.id === currentSessionId ? styles.active : ""}`}
+                            title={`${truncateUrl(session.url)} (${formatRelativeTime(session.createdAt)})`}
+                          />
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className={styles.settingsSection}>

@@ -54,6 +54,23 @@ export default function App() {
 - **Settings Persistence** - Saves preferences via AsyncStorage
 - **Navigation Support** - Detects React Navigation routes
 
+## Plugins (Experimental)
+
+Extend Agentation with plugins for additional context capture.
+
+| Plugin | Description |
+|--------|-------------|
+| [@agentation/plugin-reanimated](../../plugins/plugin-reanimated) | Capture Reanimated animation state when annotating |
+
+```tsx
+import { Agentation } from 'agentation-rn';
+import { reanimatedPausePlugin } from '@agentation/plugin-reanimated';
+
+<Agentation plugins={[reanimatedPausePlugin()]}>
+  <App />
+</Agentation>
+```
+
 ## API
 
 ### `<Agentation>`

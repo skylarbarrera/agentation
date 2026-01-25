@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Platform, Dimensions, PixelRatio } from 'react-native';
 import { debugError } from '../utils/debug';
-import type { Annotation, OutputDetailLevel } from '../types';
+import type { Annotation, OutputDetailLevel, AgentationPlugin, PluginContext, PluginExtra } from '../types';
 import { saveAnnotations, loadAnnotations } from '../utils/storage';
 import { generateId, getTimestamp, copyToClipboard } from '../utils/helpers';
 import { detectComponentAtPoint, formatElementPath, getComponentType } from '../utils/componentDetection';
@@ -47,6 +47,12 @@ export interface UseAnnotationsOptions {
    * Use this to integrate with navigation libraries other than React Navigation
    */
   navigationResolver?: NavigationResolver;
+
+  /**
+   * Plugins to call for extra markdown content
+   * Each plugin's getExtras() is called when copying markdown
+   */
+  plugins?: AgentationPlugin[];
 }
 
 export interface UseAnnotationsReturn {
@@ -95,6 +101,7 @@ export function useAnnotations(
     onMarkdownCopied,
     copyToClipboard: shouldCopyToClipboard = true,
     navigationResolver,
+    plugins = [],
   } = options;
 
   const [annotations, setAnnotations] = useState<Annotation[]>(initialAnnotations);
@@ -210,6 +217,35 @@ export function useAnnotations(
           pixelRatio: PixelRatio.get(),
         };
 
+        // Capture plugin extras at annotation time (preserves state like animation snapshots)
+        if (plugins.length > 0) {
+          const ctx: PluginContext = {
+            screenName,
+            targetFile: codeInfo.relativePath,
+            targetLine: codeInfo.lineNumber,
+            componentName: codeInfo.componentName,
+            parentComponents,
+          };
+
+          const pluginExtras: Record<string, PluginExtra> = {};
+          for (const plugin of plugins) {
+            if (plugin.getExtras) {
+              try {
+                const extra = plugin.getExtras(ctx);
+                if (extra) {
+                  pluginExtras[plugin.id] = extra;
+                }
+              } catch (e) {
+                debugError(`Plugin ${plugin.id} getExtras failed:`, e);
+              }
+            }
+          }
+
+          if (Object.keys(pluginExtras).length > 0) {
+            annotation.pluginExtras = pluginExtras;
+          }
+        }
+
         // Add to state
         setAnnotations(prev => [...prev, annotation]);
 
@@ -222,7 +258,7 @@ export function useAnnotations(
         return null;
       }
     },
-    [onAnnotationCreated]
+    [onAnnotationCreated, plugins, screenName]
   );
 
   const updateAnnotation = useCallback(
@@ -267,14 +303,40 @@ export function useAnnotations(
   const copyMarkdownFn = useCallback(async (outputDetail?: OutputDetailLevel) => {
     try {
       const output = generateMarkdown(annotations, screenName, outputDetail);
+      let finalContent = output.content;
+
+      // Collect stored plugin extras from all annotations
+      // (captured at annotation time to preserve state like animation snapshots)
+      const allExtras: PluginExtra[] = [];
+      const seenPlugins = new Set<string>();
+
+      for (const annotation of annotations) {
+        if (annotation.pluginExtras) {
+          for (const [pluginId, extra] of Object.entries(annotation.pluginExtras)) {
+            // Include each plugin's extras (could dedupe by pluginId if needed)
+            if (!seenPlugins.has(pluginId)) {
+              allExtras.push(extra);
+              seenPlugins.add(pluginId);
+            }
+          }
+        }
+      }
+
+      // Append extras to markdown
+      if (allExtras.length > 0) {
+        finalContent += '\n---\n\n## Plugin Data\n\n';
+        for (const extra of allExtras) {
+          finalContent += extra.markdown + '\n\n';
+        }
+      }
 
       // Only copy to clipboard if enabled (web parity)
       if (shouldCopyToClipboard) {
-        await copyToClipboard(output.content);
+        await copyToClipboard(finalContent);
       }
 
       // Always call callback with markdown content
-      onMarkdownCopied?.(output.content);
+      onMarkdownCopied?.(finalContent);
     } catch (error) {
       debugError('Failed to copy markdown:', error);
       throw error;

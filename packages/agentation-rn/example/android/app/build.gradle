@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.skillet.AgenationPOC'
+    namespace 'com.agentation.rn.example'
     defaultConfig {
-        applicationId 'com.skillet.AgenationPOC'
+        applicationId 'com.agentation.rn.example'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

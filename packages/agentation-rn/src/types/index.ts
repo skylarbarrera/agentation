@@ -9,6 +9,10 @@
  * - Uses React Native component types
  */
 
+// Re-export plugin types
+import type { PluginExtra } from './plugin';
+export type { AgentationPlugin, PluginContext, PluginExtra } from './plugin';
+
 // =============================================================================
 // Output Detail Levels (Web API Parity)
 // =============================================================================
@@ -241,6 +245,17 @@ export interface Annotation {
    * Device pixel ratio
    */
   pixelRatio?: number;
+
+  // ==========================================================================
+  // Plugin Data (captured at annotation time)
+  // ==========================================================================
+
+  /**
+   * Plugin extras captured when annotation was created
+   * Keyed by plugin ID, contains the markdown/data from each plugin
+   * Captured at annotation time to preserve state (e.g., animation snapshot)
+   */
+  pluginExtras?: Record<string, PluginExtra>;
 }
 
 // =============================================================================
@@ -374,6 +389,27 @@ export interface AgenationProps {
     success?: string;
     danger?: string;
   };
+
+  // ==========================================================================
+  // Plugin System
+  // ==========================================================================
+
+  /**
+   * Plugins to extend Agentation functionality
+   *
+   * Plugins can react to pause/resume, contribute extra data to output,
+   * and render custom toolbar UI.
+   *
+   * @example
+   * ```tsx
+   * import { reanimatedPauseStatePlugin } from 'agentation-reanimated-pause-state';
+   *
+   * <Agentation plugins={[reanimatedPauseStatePlugin()]}>
+   *   <App />
+   * </Agentation>
+   * ```
+   */
+  plugins?: import('./plugin').AgentationPlugin[];
 
   // ==========================================================================
   // Deprecated - Use web-compatible names above

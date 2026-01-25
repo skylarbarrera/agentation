@@ -27,6 +27,9 @@ export type {
   AgenationProps,
   AgentationProps, // Web API alias
 
+  // Plugin system
+  AgentationPlugin,
+
   // Internal types
   AnnotationMarkerProps,
   AnnotationPopupProps,

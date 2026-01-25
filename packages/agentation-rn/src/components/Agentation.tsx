@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { debugLog } from '../utils/debug';
-import type { AgenationProps, Annotation, ComponentDetection, DemoAnnotation, AgenationSettings, OutputDetailLevel } from '../types';
+import type { AgenationProps, Annotation, ComponentDetection, DemoAnnotation, AgenationSettings, OutputDetailLevel, AgentationPlugin } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import { loadSettings, saveSettings } from '../utils/storage';
 import { useAnnotations } from '../hooks/useAnnotations';
@@ -119,6 +119,7 @@ export function Agentation({
   onMarkdownCopied,
   zIndexBase = 9999,
   toolbarOffset,
+  plugins = [],
 }: AgenationProps) {
   const insets = useSafeAreaInsets();
 
@@ -139,12 +140,31 @@ export function Agentation({
   const [scrollOffset, setScrollOffset] = useState({ x: 0, y: 0 });
   const [settings, setSettings] = useState<AgenationSettings>(DEFAULT_SETTINGS);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const contentRef = useRef<View>(null);
+
+  // Check if any plugin supports pause
+  const hasPausePlugin = useMemo(
+    () => plugins.some(p => p.supportsPause && (p.isAvailable?.() ?? true)),
+    [plugins]
+  );
 
   // Load settings on mount
   useEffect(() => {
     loadSettings().then(setSettings);
   }, []);
+
+  // Handle pause toggle
+  const handlePauseToggle = useCallback(() => {
+    const newPaused = !isPaused;
+    setIsPaused(newPaused);
+    // Notify all pause-capable plugins
+    plugins.forEach(plugin => {
+      if (plugin.supportsPause) {
+        plugin.onPauseChange?.(newPaused);
+      }
+    });
+  }, [isPaused, plugins]);
 
   // Settings change handlers
   const handleAnnotationColorChange = useCallback((color: string) => {
@@ -218,6 +238,7 @@ export function Agentation({
     onAnnotationDeleted: mergedOnDelete,
     onMarkdownCopied: mergedOnCopy,
     copyToClipboard,
+    plugins,
   });
 
   const handleToggleMode = useCallback(() => {
@@ -449,6 +470,10 @@ export function Agentation({
             clearAfterCopy={settings.clearAfterCopy}
             onClearAfterCopyChange={handleClearAfterCopyChange}
             onSettingsMenuChange={handleSettingsMenuChange}
+            // Pause button (only shown if plugin provides it)
+            showPauseButton={hasPausePlugin}
+            isPaused={isPaused}
+            onPauseToggle={handlePauseToggle}
           />
         </>
       </View>

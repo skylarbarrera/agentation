@@ -12,7 +12,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IconListSparkle, IconClose, IconCopy, IconTrash, IconGear } from './Icons';
+import { IconListSparkle, IconClose, IconCopy, IconTrash, IconGear, IconPlay, IconPause } from './Icons';
 import type { OutputDetailLevel, AgenationSettings } from '../types';
 import { DEFAULT_SETTINGS, COLOR_OPTIONS } from '../types';
 import { loadSettings, saveSettings } from '../utils/storage';
@@ -101,6 +101,10 @@ export interface ToolbarProps {
   onAnnotationColorChange?: (color: string) => void;
   offset?: { x?: number; y?: number };
   onSettingsMenuChange?: (isOpen: boolean) => void;
+  // Pause button (shown when plugin provides it)
+  showPauseButton?: boolean;
+  isPaused?: boolean;
+  onPauseToggle?: () => void;
 }
 
 export function Toolbar(props: ToolbarProps) {
@@ -119,6 +123,9 @@ export function Toolbar(props: ToolbarProps) {
     onAnnotationColorChange,
     offset,
     onSettingsMenuChange,
+    showPauseButton = false,
+    isPaused = false,
+    onPauseToggle,
   } = props;
 
   const insets = useSafeAreaInsets();
@@ -327,6 +334,16 @@ export function Toolbar(props: ToolbarProps) {
               <AnimatedButton onPress={handleFabPress} style={styles.toolbarButton}>
                 <IconClose size={22} color={iconColor} />
               </AnimatedButton>
+
+              {showPauseButton && onPauseToggle && (
+                <AnimatedButton onPress={onPauseToggle} style={styles.toolbarButton}>
+                  {isPaused ? (
+                    <IconPlay size={22} color={iconColor} />
+                  ) : (
+                    <IconPause size={22} color={iconColor} />
+                  )}
+                </AnimatedButton>
+              )}
 
               <AnimatedButton
                 onPress={handleCopyPress}

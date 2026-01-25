@@ -1,14 +1,15 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Agentation } from 'agentation-rn';
+import { reanimatedPausePlugin } from '@agentation/plugin-reanimated';
 import { colors, typography } from './theme';
 import { EventsPanel } from './components';
 import { useApiEvents } from './hooks';
 
-import { HomeScreen, SettingsScreen, ProfileScreen, ScrollExampleScreen, ModalExampleScreen } from './screens';
+import { HomeScreen, SettingsScreen, ProfileScreen, ScrollExampleScreen, ModalExampleScreen, AnimationScreen } from './screens';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -16,6 +17,7 @@ export type RootStackParamList = {
   Profile: { userId: string };
   ScrollExample: undefined;
   ModalExample: undefined;
+  Animation: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -24,9 +26,12 @@ export default function App() {
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
   const { events, clearEvents, callbacks } = useApiEvents();
 
+  // Create plugins array (memoized to avoid re-renders)
+  const plugins = useMemo(() => [reanimatedPausePlugin()], []);
+
   return (
     <SafeAreaProvider>
-      <Agentation {...callbacks}>
+      <Agentation {...callbacks} plugins={plugins}>
         <View style={styles.container}>
           <NavigationContainer
           ref={navigationRef}
@@ -75,6 +80,11 @@ export default function App() {
               name="ModalExample"
               component={ModalExampleScreen}
               options={{ title: 'Modal Example' }}
+            />
+            <Stack.Screen
+              name="Animation"
+              component={AnimationScreen}
+              options={{ title: 'Animations' }}
             />
           </Stack.Navigator>
           </NavigationContainer>

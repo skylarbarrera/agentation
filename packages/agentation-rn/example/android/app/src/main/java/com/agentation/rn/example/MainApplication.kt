@@ -1,4 +1,4 @@
-package com.skillet.AgenationPOC
+package com.agentation.rn.example
 
 import android.app.Application
 import android.content.res.Configuration

@@ -3,3 +3,4 @@ packages:
   - '_package-export/example'
   - 'packages/agentation-rn'
   - 'packages/agentation-rn/example'
+  - 'plugins/*'

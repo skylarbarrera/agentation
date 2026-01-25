@@ -1492,8 +1492,8 @@ $green: #34c759;
 .toggleSwitch {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 26px;
+  width: 24px;
+  height: 16px;
   flex-shrink: 0;
 
   input {
@@ -1503,11 +1503,11 @@ $green: #34c759;
   }
 
   input:checked + .toggleSlider {
-    background: $green;
+    background: $blue;
   }
 
   input:checked + .toggleSlider::before {
-    transform: translateX(18px);
+    transform: translateX(8px);
   }
 }
 
@@ -1515,21 +1515,24 @@ $green: #34c759;
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 26px;
-  transition: background 0.2s ease;
+  border-radius: 16px;
+  background: #484848; // Dark mode unchecked
+
+  .light & {
+    background: #dddddd; // Light mode unchecked
+  }
 
   &::before {
     content: "";
     position: absolute;
-    height: 22px;
-    width: 22px;
+    height: 12px;
+    width: 12px;
     left: 2px;
     bottom: 2px;
     background: white;
     border-radius: 50%;
-    transition: transform 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 }
 

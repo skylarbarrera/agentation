@@ -7,7 +7,7 @@ type Bounds = {
 
 /** Measures the width/height of an element using ResizeObserver. */
 export const useMeasure = <T extends HTMLElement>(): [
-  React.RefObject<T | null>,
+  React.RefObject<T>,
   Bounds,
 ] => {
   const ref = React.useRef<T>(null);

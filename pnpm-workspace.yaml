@@ -2,3 +2,5 @@ packages:
   - 'package'
   - 'package/example'
   - 'mcp'
+  - 'packages/agentation-rn'
+  - 'packages/agentation-rn/example'

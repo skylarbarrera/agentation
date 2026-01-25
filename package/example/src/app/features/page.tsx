@@ -68,13 +68,13 @@ export default function FeaturesPage() {
         </p>
         <ReactDetectionDemo />
         <p style={{ marginTop: '1rem' }}>
-          Configure detection mode in the settings panel:
+          Toggle React detection on/off in settings. The detection mode adapts automatically based on your output format:
         </p>
         <ul>
-          <li><strong>Filtered</strong> (default) &mdash; Shows user components, hides framework internals like providers, boundaries, and routers</li>
-          <li><strong>Smart</strong> &mdash; Only shows components that correlate with CSS class names on the element</li>
-          <li><strong>All</strong> &mdash; Shows every component in the tree, including framework internals</li>
-          <li><strong>Off</strong> &mdash; Disables React detection entirely</li>
+          <li><strong>Compact</strong> &mdash; No React data (keeps output minimal)</li>
+          <li><strong>Standard</strong> &mdash; Filtered &mdash; shows user components, hides framework internals</li>
+          <li><strong>Detailed</strong> &mdash; Smart &mdash; only components that correlate with CSS class names</li>
+          <li><strong>Forensic</strong> &mdash; All &mdash; every component including framework internals</li>
         </ul>
       </section>
 

@@ -124,6 +124,7 @@ type HoverInfo = {
 };
 
 type OutputDetailLevel = "compact" | "standard" | "detailed" | "forensic";
+// ReactComponentMode is now derived from outputDetail when reactEnabled is true
 type ReactComponentMode = "smart" | "filtered" | "all" | "off";
 type AgentMode = "claude-code" | "manual" | "custom";
 type MarkerClickBehavior = "edit" | "delete";
@@ -133,7 +134,7 @@ type ToolbarSettings = {
   autoClearAfterCopy: boolean;
   annotationColor: string;
   blockInteractions: boolean;
-  reactComponentMode: ReactComponentMode;
+  reactEnabled: boolean; // Simple toggle - mode derived from outputDetail
   agentMode: AgentMode;
   markerClickBehavior: MarkerClickBehavior;
 };
@@ -143,9 +144,17 @@ const DEFAULT_SETTINGS: ToolbarSettings = {
   autoClearAfterCopy: false,
   annotationColor: "#3c82f7",
   blockInteractions: false,
-  reactComponentMode: "filtered",
+  reactEnabled: true,
   agentMode: "manual",
   markerClickBehavior: "edit",
+};
+
+// Maps output detail level to React detection mode
+const OUTPUT_TO_REACT_MODE: Record<OutputDetailLevel, ReactComponentMode> = {
+  compact: "off",
+  standard: "filtered",
+  detailed: "smart",
+  forensic: "all",
 };
 
 const AGENT_MODE_OPTIONS: {
@@ -176,25 +185,6 @@ const MARKER_CLICK_OPTIONS: {
 }[] = [
   { value: "edit", label: "Edit" },
   { value: "delete", label: "Delete" },
-];
-
-const REACT_MODE_OPTIONS: {
-  value: ReactComponentMode;
-  label: string;
-  tooltip: string;
-}[] = [
-  {
-    value: "filtered",
-    label: "Filtered",
-    tooltip: "Shows user components, hides framework internals",
-  },
-  {
-    value: "smart",
-    label: "Smart",
-    tooltip: "Only components matching CSS class names",
-  },
-  { value: "all", label: "All", tooltip: "Every component including internals" },
-  { value: "off", label: "Off", tooltip: "Disable React detection" },
 ];
 
 const OUTPUT_DETAIL_OPTIONS: { value: OutputDetailLevel; label: string }[] = [
@@ -519,10 +509,11 @@ export function PageFeedbackToolbarCSS({
   // Effective localhost check (can be overridden by debug toggle to simulate prod)
   const effectiveIsLocalhost = isLocalhost && !debugReactOff;
 
-  // Effective React mode - forced to "off" when not on localhost (or debug override)
-  const effectiveReactMode: ReactComponentMode = effectiveIsLocalhost
-    ? settings.reactComponentMode
-    : "off";
+  // Effective React mode - derived from outputDetail when enabled
+  const effectiveReactMode: ReactComponentMode =
+    effectiveIsLocalhost && settings.reactEnabled
+      ? OUTPUT_TO_REACT_MODE[settings.outputDetail]
+      : "off";
 
   // Server sync state
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(
@@ -2463,7 +2454,7 @@ export function PageFeedbackToolbarCSS({
               </div>
 
               <div
-                className={`${styles.settingsRow} ${!isLocalhost ? styles.settingsRowDisabled : ""}`}
+                className={`${styles.settingsRow} ${!effectiveIsLocalhost ? styles.settingsRowDisabled : ""}`}
                 style={{ marginTop: 4 }}
               >
                 <div
@@ -2475,50 +2466,21 @@ export function PageFeedbackToolbarCSS({
                     data-tooltip={
                       !effectiveIsLocalhost
                         ? "Only available on localhost"
-                        : REACT_MODE_OPTIONS.find(
-                            (opt) => opt.value === settings.reactComponentMode,
-                          )?.tooltip ||
-                          "Show React component names in annotations"
+                        : "Include React component names in annotations"
                     }
                   >
                     <IconHelp size={20} />
                   </span>
                 </div>
-                <button
-                  className={`${styles.cycleButton} ${!isDarkMode ? styles.light : ""}`}
-                  disabled={!effectiveIsLocalhost}
-                  onClick={() => {
-                    if (!effectiveIsLocalhost) return;
-                    const currentIndex = REACT_MODE_OPTIONS.findIndex(
-                      (opt) => opt.value === settings.reactComponentMode,
-                    );
-                    const nextIndex =
-                      (currentIndex + 1) % REACT_MODE_OPTIONS.length;
-                    setSettings((s) => ({
-                      ...s,
-                      reactComponentMode: REACT_MODE_OPTIONS[nextIndex].value,
-                    }));
-                  }}
-                >
-                  <span
-                    key={effectiveIsLocalhost ? settings.reactComponentMode : "off"}
-                    className={styles.cycleButtonText}
-                  >
-                    {effectiveIsLocalhost
-                      ? REACT_MODE_OPTIONS.find(
-                          (opt) => opt.value === settings.reactComponentMode,
-                        )?.label
-                      : "Off"}
-                  </span>
-                  <span className={styles.cycleDots}>
-                    {REACT_MODE_OPTIONS.map((option) => (
-                      <span
-                        key={option.value}
-                        className={`${styles.cycleDot} ${!isDarkMode ? styles.light : ""} ${(effectiveIsLocalhost ? settings.reactComponentMode : "off") === option.value ? styles.active : ""}`}
-                      />
-                    ))}
-                  </span>
-                </button>
+                <label className={`${styles.toggleSwitch} ${!effectiveIsLocalhost ? styles.disabled : ""}`}>
+                  <input
+                    type="checkbox"
+                    checked={effectiveIsLocalhost && settings.reactEnabled}
+                    disabled={!effectiveIsLocalhost}
+                    onChange={() => setSettings((s) => ({ ...s, reactEnabled: !s.reactEnabled }))}
+                  />
+                  <span className={styles.toggleSlider} />
+                </label>
               </div>
             </div>
 

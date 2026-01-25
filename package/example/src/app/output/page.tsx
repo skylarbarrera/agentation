@@ -237,9 +237,11 @@ export default function OutputPage() {
       <section>
         <h2>React component detection</h2>
         <p>
-          In React apps, the output can include the component tree for each annotated element
+          In React apps, the output includes the component tree for each annotated element
           (e.g., <code>&lt;App&gt; &lt;Dashboard&gt; &lt;SubmitButton&gt;</code>).
-          This helps agents find the right component file directly. Toggle this in <a href="/features">settings</a>.
+          The level of detail adapts to your output format: Compact omits React data,
+          Standard shows filtered components, Detailed uses smart matching, and Forensic shows everything.
+          Toggle React detection on/off in settings.
         </p>
       </section>
 

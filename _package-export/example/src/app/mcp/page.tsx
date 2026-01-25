@@ -32,6 +32,9 @@ export default function McpPage() {
             It runs both an <strong>HTTP server</strong> (for the browser toolbar) and an{" "}
             <strong>MCP server</strong> (for agents via stdio), sharing the same data store.
           </p>
+          <p style={{ marginTop: "0.75rem", fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)" }}>
+            <code>toolbar</code> → <code>server</code> → <code>agent</code>
+          </p>
         </section>
 
         <section>

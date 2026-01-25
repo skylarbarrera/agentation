@@ -95,7 +95,7 @@ export default function AgentationDocs() {
             <li>Paste into your agent</li>
           </ol>
           <p style={{ fontSize: '0.8125rem', color: 'rgba(0,0,0,0.55)', marginTop: '1rem' }}>
-            With <Link href="/mcp">MCP</Link>, you can skip the copy-paste entirely. Just add annotations and talk to your agent &mdash; it sees your feedback in real-time and can act on it directly.
+            With <Link href="/mcp">MCP</Link>, you can skip the copy-paste step entirely &mdash; your agent already sees what you&apos;re pointing at. Just say &ldquo;address my feedback&rdquo; or &ldquo;fix annotation 3.&rdquo;
           </p>
         </section>
 

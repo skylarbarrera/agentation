@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo, useContext } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -16,8 +16,53 @@ import { IconListSparkle, IconClose, IconCopy, IconTrash, IconGear, IconSun, Ico
 import type { OutputDetailLevel } from '../types';
 import { useToolbarAnimations } from '../hooks/useToolbarAnimations';
 import { useToolbarSettings } from '../hooks/useToolbarSettings';
-// @ts-expect-error - importing version from package.json
+import { AgenationContext } from '../context/AgenationContext';
 import { version as __VERSION__ } from '../../package.json';
+
+const THEME = {
+  dark: {
+    containerBg: '#1a1a1a',
+    textPrimary: '#FFFFFF',
+    textSecondary: 'rgba(255, 255, 255, 0.6)',
+    textTertiary: 'rgba(255, 255, 255, 0.5)',
+    textQuaternary: 'rgba(255, 255, 255, 0.4)',
+    toggleText: 'rgba(255, 255, 255, 0.85)',
+    border: 'rgba(255, 255, 255, 0.07)',
+    checkboxBorder: 'rgba(255, 255, 255, 0.2)',
+    checkboxCheckedBg: '#FFFFFF',
+    checkboxCheckedBorder: 'rgba(255, 255, 255, 0.3)',
+    checkmarkColor: '#1a1a1a',
+    dotInactive: 'rgba(255, 255, 255, 0.3)',
+    dotActive: '#FFFFFF',
+    iconDisabled: '#666666',
+    shadowOpacity: 0.2,
+    menuBorder: 'rgba(255, 255, 255, 0.08)',
+    menuShadowOffset: 4,
+    menuShadowOpacity: 0.3,
+    menuShadowRadius: 20,
+  },
+  light: {
+    containerBg: '#FFFFFF',
+    textPrimary: 'rgba(0, 0, 0, 0.85)',
+    textSecondary: 'rgba(0, 0, 0, 0.5)',
+    textTertiary: 'rgba(0, 0, 0, 0.4)',
+    textQuaternary: 'rgba(0, 0, 0, 0.4)',
+    toggleText: 'rgba(0, 0, 0, 0.5)',
+    border: 'rgba(0, 0, 0, 0.08)',
+    checkboxBorder: 'rgba(0, 0, 0, 0.15)',
+    checkboxCheckedBg: '#1a1a1a',
+    checkboxCheckedBorder: '#1a1a1a',
+    checkmarkColor: '#FFFFFF',
+    dotInactive: 'rgba(0, 0, 0, 0.2)',
+    dotActive: 'rgba(0, 0, 0, 0.7)',
+    iconDisabled: 'rgba(0, 0, 0, 0.3)',
+    shadowOpacity: 0.2,
+    menuBorder: 'rgba(0, 0, 0, 0.04)',
+    menuShadowOffset: 1,
+    menuShadowOpacity: 0.25,
+    menuShadowRadius: 8,
+  },
+} as const;
 
 const DETAIL_LEVEL_LABELS: Record<OutputDetailLevel, string> = {
   compact: 'Compact',
@@ -115,10 +160,14 @@ export function Toolbar(props: ToolbarProps) {
   } = props;
 
   const insets = useSafeAreaInsets();
+  const context = useContext(AgenationContext);
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true); // Mock state for demo
+
+  const isDarkMode = context?.isDarkMode ?? true;
+  const setIsDarkMode = context?.setIsDarkMode ?? (() => {});
+  const theme = useMemo(() => THEME[isDarkMode ? 'dark' : 'light'], [isDarkMode]);
 
   const animations = useToolbarAnimations(isExpanded, showSettingsMenu, annotationCount);
 
@@ -175,7 +224,7 @@ export function Toolbar(props: ToolbarProps) {
   const bottomPosition = Math.max(insets.bottom, 16) + 16 + (offset?.y ?? 0);
   const rightPosition = 20 + (offset?.x ?? 0);
 
-  const iconColor = '#FFFFFF';
+  const iconColor = theme.textPrimary;
   const badgeColor = settings.currentAnnotationColor;
 
   const containerStyle = [styles.container, { zIndex, bottom: bottomPosition, right: rightPosition }];
@@ -195,20 +244,34 @@ export function Toolbar(props: ToolbarProps) {
         ]}
         pointerEvents={showSettingsMenu ? 'auto' : 'none'}
       >
-        <FloatingContainer style={styles.settingsMenu}>
+        <FloatingContainer style={[
+          styles.settingsMenu,
+          {
+            backgroundColor: theme.containerBg,
+            borderWidth: 1,
+            borderColor: theme.menuBorder,
+            ...Platform.select({
+              ios: {
+                shadowOffset: { width: 0, height: theme.menuShadowOffset },
+                shadowOpacity: theme.menuShadowOpacity,
+                shadowRadius: theme.menuShadowRadius,
+              },
+            }),
+          },
+        ]}>
           {/* Header */}
-          <View style={styles.settingsHeader}>
-            <Text style={styles.settingsBrand}>
-              <Text style={[styles.settingsBrandSlash, { color: settings.currentAnnotationColor }]}>/</Text>
+          <View style={[styles.settingsHeader, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.settingsBrand, { color: theme.textPrimary }]}>
+              <Text style={{ color: settings.currentAnnotationColor }}>/</Text>
               agentation
             </Text>
-            <Text style={styles.settingsVersion}>v{__VERSION__}</Text>
+            <Text style={[styles.settingsVersion, { color: theme.textQuaternary }]}>v{__VERSION__}</Text>
             <TouchableOpacity
               style={styles.themeToggle}
               onPress={() => setIsDarkMode(!isDarkMode)}
               activeOpacity={0.7}
             >
-              {isDarkMode ? <IconSun size={14} color="rgba(255, 255, 255, 0.4)" /> : <IconMoon size={14} color="rgba(255, 255, 255, 0.4)" />}
+              {isDarkMode ? <IconSun size={14} color={theme.textQuaternary} /> : <IconMoon size={14} color={theme.textQuaternary} />}
             </TouchableOpacity>
           </View>
 
@@ -219,9 +282,9 @@ export function Toolbar(props: ToolbarProps) {
               onPress={settings.handleOutputDetailCycle}
               activeOpacity={0.7}
             >
-              <Text style={styles.settingsLabel}>Output Detail</Text>
+              <Text style={[styles.settingsLabel, { color: theme.textSecondary }]}>Output Detail</Text>
               <View style={styles.settingsValueWithDots}>
-                <Text style={styles.settingsValueText}>
+                <Text style={[styles.settingsValueText, { color: theme.textPrimary }]}>
                   {DETAIL_LEVEL_LABELS[settings.currentOutputDetail]}
                 </Text>
                 <View style={styles.cycleDots}>
@@ -230,7 +293,8 @@ export function Toolbar(props: ToolbarProps) {
                       key={level}
                       style={[
                         styles.cycleDot,
-                        settings.currentOutputDetail === level && styles.cycleDotActive,
+                        { backgroundColor: theme.dotInactive },
+                        settings.currentOutputDetail === level && { backgroundColor: theme.dotActive },
                       ]}
                     />
                   ))}
@@ -240,28 +304,37 @@ export function Toolbar(props: ToolbarProps) {
           </View>
 
           {/* Marker Colour Section */}
-          <View style={styles.settingsSection}>
+          <View style={[styles.settingsSection, { borderTopColor: theme.border }]}>
             <TouchableOpacity
               style={styles.settingsRow}
               onPress={settings.handleAnnotationColorCycle}
               activeOpacity={0.7}
             >
-              <Text style={styles.settingsLabel}>Marker Colour</Text>
+              <Text style={[styles.settingsLabel, { color: theme.textSecondary }]}>Marker Colour</Text>
               <View style={[styles.colorSwatch, { backgroundColor: settings.currentAnnotationColor }]} />
             </TouchableOpacity>
           </View>
 
           {/* Toggles Section */}
-          <View style={styles.settingsSection}>
+          <View style={[styles.settingsSection, { borderTopColor: theme.border }]}>
             <TouchableOpacity
               style={styles.toggleRow}
               onPress={settings.handleClearAfterCopyToggle}
               activeOpacity={0.6}
             >
-              <View style={[styles.checkbox, settings.currentClearAfterCopy && styles.checkboxChecked]}>
-                {settings.currentClearAfterCopy && <Text style={styles.checkmark}>✓</Text>}
+              <View style={[
+                styles.checkbox,
+                { borderColor: theme.checkboxBorder },
+                settings.currentClearAfterCopy && {
+                  backgroundColor: theme.checkboxCheckedBg,
+                  borderColor: theme.checkboxCheckedBorder,
+                },
+              ]}>
+                {settings.currentClearAfterCopy && (
+                  <Text style={[styles.checkmark, { color: theme.checkmarkColor }]}>✓</Text>
+                )}
               </View>
-              <Text style={styles.toggleLabel}>Clear after output</Text>
+              <Text style={[styles.toggleLabel, { color: theme.toggleText }]}>Clear after output</Text>
             </TouchableOpacity>
           </View>
         </FloatingContainer>
@@ -281,10 +354,22 @@ export function Toolbar(props: ToolbarProps) {
           ]}
           pointerEvents={isExpanded ? 'none' : 'auto'}
         >
-          <AnimatedButton onPress={handleFabPress} style={styles.fab}>
-            <FloatingContainer style={styles.fabGlass}>
-              <IconListSparkle size={20} color={iconColor} />
-            </FloatingContainer>
+          <AnimatedButton onPress={handleFabPress} style={[
+            styles.fab,
+            { backgroundColor: theme.containerBg },
+            Platform.select({
+              ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+              },
+              android: {
+                elevation: 8,
+              },
+            }),
+          ]}>
+            <IconListSparkle size={20} color={iconColor} />
           </AnimatedButton>
 
           {annotationCount > 0 && (
@@ -308,7 +393,7 @@ export function Toolbar(props: ToolbarProps) {
           ]}
           pointerEvents={isExpanded ? 'auto' : 'none'}
         >
-          <FloatingContainer style={styles.toolbar}>
+          <FloatingContainer style={[styles.toolbar, { backgroundColor: theme.containerBg }]}>
             <View style={styles.toolbarButtons}>
               <AnimatedButton
                 onPress={handleCopyPress}
@@ -318,7 +403,7 @@ export function Toolbar(props: ToolbarProps) {
                   annotationCount === 0 && styles.toolbarButtonDisabled,
                 ]}
               >
-                <IconCopy size={18} color={annotationCount > 0 ? iconColor : '#666'} />
+                <IconCopy size={18} color={annotationCount > 0 ? iconColor : theme.iconDisabled} />
               </AnimatedButton>
 
               <AnimatedButton
@@ -329,7 +414,7 @@ export function Toolbar(props: ToolbarProps) {
                   annotationCount === 0 && styles.toolbarButtonDisabled,
                 ]}
               >
-                <IconTrash size={18} color={annotationCount > 0 ? iconColor : '#666'} />
+                <IconTrash size={18} color={annotationCount > 0 ? iconColor : theme.iconDisabled} />
               </AnimatedButton>
 
               <AnimatedButton onPress={handleSettingsPress} style={styles.toolbarButton}>
@@ -375,12 +460,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    overflow: 'hidden',
-  },
-  fabGlass: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -412,7 +491,6 @@ const styles = StyleSheet.create({
   },
 
   floatingBackground: {
-    backgroundColor: '#1a1a1a',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -481,7 +559,8 @@ const styles = StyleSheet.create({
   },
   settingsMenu: {
     borderRadius: 16,
-    paddingVertical: 12,
+    paddingTop: 13,
+    paddingBottom: 16,
     paddingHorizontal: 16,
     minWidth: 205,
   },
@@ -491,21 +570,15 @@ const styles = StyleSheet.create({
     minHeight: 24,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.07)',
   },
   settingsBrand: {
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: -0.12,
-    color: '#FFFFFF',
-  },
-  settingsBrandSlash: {
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   settingsVersion: {
     fontSize: 11,
     fontWeight: '400',
-    color: 'rgba(255, 255, 255, 0.4)',
     marginLeft: 'auto',
     letterSpacing: -0.12,
   },
@@ -524,7 +597,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     marginTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.07)',
   },
   settingsRow: {
     flexDirection: 'row',
@@ -538,18 +610,15 @@ const styles = StyleSheet.create({
     minHeight: 24,
   },
   settingsLabel: {
-    color: 'rgba(255, 255, 255, 0.5)',
     fontSize: 13,
     fontWeight: '400',
   },
   toggleLabel: {
-    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '400',
     marginLeft: 8,
   },
   settingsValueText: {
-    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -567,13 +636,11 @@ const styles = StyleSheet.create({
     width: 2,
     height: 2,
     borderRadius: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   cycleDotActive: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: '#FFFFFF',
   },
   colorSwatch: {
     width: 20,
@@ -585,17 +652,11 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 2, // align with 20px swatch
-  },
-  checkboxChecked: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
+    marginRight: 2,
   },
   checkmark: {
-    color: '#1a1a1a',
     fontSize: 11,
     fontWeight: '600',
     marginTop: -1,

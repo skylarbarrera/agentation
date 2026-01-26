@@ -16,6 +16,8 @@ export interface AgenationContextValue {
   scrollOffset: { x: number; y: number };
   /** Whether annotation mode is active */
   isAnnotationMode: boolean;
+  isDarkMode: boolean;
+  setIsDarkMode: (value: boolean) => void;
 }
 
 /**

@@ -81,9 +81,8 @@ export default function SchemaPage() {
             An annotation represents a single piece of feedback attached to a UI element.
           </p>
           <p style={{ fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)", marginTop: "0.5rem", marginBottom: "1rem" }}>
-            <strong>Note:</strong> The browser component captures additional positioning fields (<code>x</code>, <code>y</code>, <code>isFixed</code>)
-            for UI rendering. The server adds metadata fields (<code>sessionId</code>, <code>createdAt</code>, <code>updatedAt</code>).
-            This spec documents the core portable schema.
+            <strong>Note:</strong> The server may add metadata fields (<code>sessionId</code>, <code>createdAt</code>, <code>updatedAt</code>)
+            when syncing annotations.
           </p>
 
           <h3>Required Fields</h3>
@@ -94,6 +93,9 @@ export default function SchemaPage() {
   comment: string;      // Human feedback ("Button is misaligned")
   elementPath: string;  // CSS selector path ("body > main > button.cta")
   timestamp: number;    // Unix timestamp (ms)
+  x: number;            // % of viewport width (0-100)
+  y: number;            // px from document top (or viewport if isFixed)
+  element: string;      // Tag name ("button", "div", "input")
 }`}
           />
 
@@ -101,7 +103,6 @@ export default function SchemaPage() {
           <CodeBlock
             language="typescript"
             code={`{
-  element: string;      // Tag name ("button", "div", "input") - always set by browser component
   url: string;          // Page URL where annotation was created
   boundingBox: {        // Element position at annotation time
     x: number;
@@ -142,6 +143,20 @@ export default function SchemaPage() {
   thread: ThreadMessage[];  // Back-and-forth conversation
 }`}
           />
+
+          <h3>Browser Component Fields</h3>
+          <p style={{ fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)", marginBottom: "0.5rem" }}>
+            These optional fields are set by the Agentation browser component for UI rendering:
+          </p>
+          <CodeBlock
+            language="typescript"
+            code={`{
+  isFixed: boolean;         // Element has fixed/sticky positioning
+  isMultiSelect: boolean;   // Created via drag selection
+  fullPath: string;         // Full DOM path (vs shorter elementPath)
+  nearbyElements: string;   // Info about nearby DOM elements
+}`}
+          />
         </section>
 
         <section>
@@ -155,9 +170,11 @@ export default function SchemaPage() {
   comment: string;
   elementPath: string;
   timestamp: number;
+  x: number;            // % of viewport width (0-100)
+  y: number;            // px from document top (or viewport if isFixed)
+  element: string;      // Tag name ("button", "div")
 
   // Recommended
-  element?: string;
   url?: string;
   boundingBox?: {
     x: number;
@@ -173,6 +190,12 @@ export default function SchemaPage() {
   accessibility?: string;
   nearbyText?: string;
   selectedText?: string;
+
+  // Browser component fields
+  isFixed?: boolean;       // Element has fixed/sticky positioning
+  isMultiSelect?: boolean; // Created via drag selection
+  fullPath?: string;       // Full DOM path
+  nearbyElements?: string; // Info about nearby elements
 
   // Feedback classification
   intent?: "fix" | "change" | "question" | "approve";
@@ -231,12 +254,14 @@ type ThreadMessage = {
   "$id": "https://agentation.dev/schema/annotation.v1.json",
   "title": "Annotation",
   "type": "object",
-  "required": ["id", "comment", "elementPath", "timestamp"],
+  "required": ["id", "comment", "elementPath", "timestamp", "x", "y", "element"],
   "properties": {
     "id": { "type": "string" },
     "comment": { "type": "string" },
     "elementPath": { "type": "string" },
     "timestamp": { "type": "number" },
+    "x": { "type": "number", "description": "% of viewport width (0-100)" },
+    "y": { "type": "number", "description": "px from document top" },
     "element": { "type": "string" },
     "url": { "type": "string", "format": "uri" },
     "boundingBox": {
@@ -250,6 +275,10 @@ type ThreadMessage = {
       "required": ["x", "y", "width", "height"]
     },
     "reactComponents": { "type": "string" },
+    "isFixed": { "type": "boolean" },
+    "isMultiSelect": { "type": "boolean" },
+    "fullPath": { "type": "string" },
+    "nearbyElements": { "type": "string" },
     "intent": { "enum": ["fix", "change", "question", "approve"] },
     "severity": { "enum": ["blocking", "important", "suggestion"] },
     "status": { "enum": ["pending", "acknowledged", "resolved", "dismissed"] }
@@ -267,6 +296,8 @@ type ThreadMessage = {
   "comment": "Button is cut off on mobile viewport",
   "elementPath": "body > main > .hero-section > button.cta",
   "timestamp": 1705694400000,
+  "x": 45.5,
+  "y": 480,
   "element": "button",
   "url": "http://localhost:3000/landing",
   "boundingBox": { "x": 120, "y": 480, "width": 200, "height": 48 },
@@ -333,8 +364,8 @@ type ThreadMessage = {
             To emit Agentation Format annotations from your tool:
           </p>
           <ol style={{ paddingLeft: "1.25rem" }}>
-            <li>Capture the required fields: <code>id</code>, <code>comment</code>, <code>elementPath</code>, <code>timestamp</code></li>
-            <li>Add recommended fields for better agent accuracy: <code>element</code>, <code>url</code>, <code>boundingBox</code></li>
+            <li>Capture the required fields: <code>id</code>, <code>comment</code>, <code>elementPath</code>, <code>timestamp</code>, <code>x</code>, <code>y</code>, <code>element</code></li>
+            <li>Add recommended fields for better agent accuracy: <code>url</code>, <code>boundingBox</code></li>
             <li>For React apps, traverse the fiber tree to get <code>reactComponents</code></li>
             <li>Output as JSON for MCP/API consumption, or markdown for chat pasting</li>
           </ol>

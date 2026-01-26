@@ -120,14 +120,16 @@ function App() {
           </p>
           <CodeBlock
             code={`type Annotation = {
-  // Required (core schema)
+  // Required
   id: string;              // Unique identifier
   comment: string;         // User's annotation text
   elementPath: string;     // CSS selector path
   timestamp: number;       // Unix timestamp (ms)
+  x: number;               // % of viewport width (0-100)
+  y: number;               // px from document top
+  element: string;         // Tag name ("button", "div")
 
   // Recommended
-  element?: string;        // Tag name ("button", "div")
   url?: string;            // Page URL
   boundingBox?: {          // Element dimensions
     x: number;
@@ -144,10 +146,9 @@ function App() {
   nearbyText?: string;
   selectedText?: string;      // If text was selected
 
-  // Browser component adds positioning
-  x: number;               // % of viewport width
-  y: number;               // px from top
+  // Browser component fields
   isFixed?: boolean;       // Fixed-position element
+  isMultiSelect?: boolean; // Created via drag selection
 };`}
           />
         </section>

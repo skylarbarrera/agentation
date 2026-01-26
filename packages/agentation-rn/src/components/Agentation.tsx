@@ -109,6 +109,7 @@ export function Agentation({
   const [settings, setSettings] = useState<AgenationSettings>(DEFAULT_SETTINGS);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const contentRef = useRef<View>(null);
 
   useEffect(() => {
@@ -145,7 +146,9 @@ export function Agentation({
     reportScrollOffset,
     scrollOffset,
     isAnnotationMode,
-  }), [reportScrollOffset, scrollOffset, isAnnotationMode]);
+    isDarkMode,
+    setIsDarkMode,
+  }), [reportScrollOffset, scrollOffset, isAnnotationMode, isDarkMode]);
 
   const updateCurrentRoute = useCallback(() => {
     const route = getCurrentRouteName();
@@ -376,6 +379,7 @@ export function Agentation({
             toolbarHeight={toolbarHeight}
             settingsMenuHeight={isSettingsMenuOpen ? 140 : 0}
             accentColor={settings.annotationColor}
+            isDarkMode={isDarkMode}
           />
 
           {popupVisible && selectedAnnotation && selectedAnnotationIndex !== -1 && (

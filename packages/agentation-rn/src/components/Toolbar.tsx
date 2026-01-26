@@ -310,10 +310,6 @@ export function Toolbar(props: ToolbarProps) {
         >
           <FloatingContainer style={styles.toolbar}>
             <View style={styles.toolbarButtons}>
-              <AnimatedButton onPress={handleFabPress} style={styles.toolbarButton}>
-                <IconClose size={18} color={iconColor} />
-              </AnimatedButton>
-
               <AnimatedButton
                 onPress={handleCopyPress}
                 disabled={annotationCount === 0}
@@ -338,6 +334,10 @@ export function Toolbar(props: ToolbarProps) {
 
               <AnimatedButton onPress={handleSettingsPress} style={styles.toolbarButton}>
                 <IconGear size={18} color={iconColor} />
+              </AnimatedButton>
+
+              <AnimatedButton onPress={handleFabPress} style={styles.toolbarButton}>
+                <IconClose size={18} color={iconColor} />
               </AnimatedButton>
             </View>
           </FloatingContainer>

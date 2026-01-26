@@ -46,8 +46,9 @@ function App() {
 }`}
           />
           <p style={{ marginTop: "0.75rem", fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)" }}>
-            When a webhook URL is configured, a toggle appears in the settings panel allowing users to
-            temporarily disable webhooks without removing the URL.
+            With a webhook URL configured, you have two options: enable Auto-Send to fire events automatically,
+            or use the "Send to Agent" button in the toolbar manually. When Auto-Send is on, the toolbar button
+            is hidden.
           </p>
         </section>
 

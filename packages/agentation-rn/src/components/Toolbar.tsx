@@ -12,7 +12,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IconListSparkle, IconClose, IconCopy, IconTrash, IconGear, IconSun, IconMoon } from './Icons';
+import { IconListSparkle, IconClose, IconCopy, IconTrash, IconGear, IconSun, IconMoon, IconEye, IconEyeSlash } from './Icons';
 import type { OutputDetailLevel } from '../types';
 import { useToolbarAnimations } from '../hooks/useToolbarAnimations';
 import { useToolbarSettings } from '../hooks/useToolbarSettings';
@@ -139,6 +139,8 @@ export interface ToolbarProps {
   onAnnotationColorChange?: (color: string) => void;
   offset?: { x?: number; y?: number };
   onSettingsMenuChange?: (isOpen: boolean) => void;
+  showMarkers?: boolean;
+  onShowMarkersChange?: (show: boolean) => void;
 }
 
 export function Toolbar(props: ToolbarProps) {
@@ -157,6 +159,8 @@ export function Toolbar(props: ToolbarProps) {
     onAnnotationColorChange,
     offset,
     onSettingsMenuChange,
+    showMarkers: controlledShowMarkers,
+    onShowMarkersChange,
   } = props;
 
   const insets = useSafeAreaInsets();
@@ -164,6 +168,8 @@ export function Toolbar(props: ToolbarProps) {
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [internalShowMarkers, setInternalShowMarkers] = useState(true);
+  const showMarkers = controlledShowMarkers ?? internalShowMarkers;
 
   const isDarkMode = context?.isDarkMode ?? true;
   const setIsDarkMode = context?.setIsDarkMode ?? (() => {});
@@ -221,6 +227,12 @@ export function Toolbar(props: ToolbarProps) {
     });
   }, [onSettingsMenuChange]);
 
+  const handleMarkersToggle = useCallback(() => {
+    const newValue = !showMarkers;
+    setInternalShowMarkers(newValue);
+    onShowMarkersChange?.(newValue);
+  }, [showMarkers, onShowMarkersChange]);
+
   const bottomPosition = Math.max(insets.bottom, 16) + 16 + (offset?.y ?? 0);
   const rightPosition = 20 + (offset?.x ?? 0);
 
@@ -259,7 +271,6 @@ export function Toolbar(props: ToolbarProps) {
             }),
           },
         ]}>
-          {/* Header */}
           <View style={[styles.settingsHeader, { borderBottomColor: theme.border }]}>
             <Text style={[styles.settingsBrand, { color: theme.textPrimary }]}>
               <Text style={{ color: settings.currentAnnotationColor }}>/</Text>
@@ -275,7 +286,6 @@ export function Toolbar(props: ToolbarProps) {
             </TouchableOpacity>
           </View>
 
-          {/* Output Detail Section */}
           <View style={styles.settingsSectionFirst}>
             <TouchableOpacity
               style={styles.settingsRow}
@@ -303,7 +313,6 @@ export function Toolbar(props: ToolbarProps) {
             </TouchableOpacity>
           </View>
 
-          {/* Marker Colour Section */}
           <View style={[styles.settingsSection, { borderTopColor: theme.border }]}>
             <TouchableOpacity
               style={styles.settingsRow}
@@ -315,7 +324,6 @@ export function Toolbar(props: ToolbarProps) {
             </TouchableOpacity>
           </View>
 
-          {/* Toggles Section */}
           <View style={[styles.settingsSection, { borderTopColor: theme.border }]}>
             <TouchableOpacity
               style={styles.toggleRow}
@@ -396,6 +404,21 @@ export function Toolbar(props: ToolbarProps) {
           <FloatingContainer style={[styles.toolbar, { backgroundColor: theme.containerBg }]}>
             <View style={styles.toolbarButtons}>
               <AnimatedButton
+                onPress={handleMarkersToggle}
+                disabled={annotationCount === 0}
+                style={[
+                  styles.toolbarButton,
+                  annotationCount === 0 && styles.toolbarButtonDisabled,
+                ]}
+              >
+                {showMarkers ? (
+                  <IconEye size={24} color={annotationCount > 0 ? iconColor : theme.iconDisabled} />
+                ) : (
+                  <IconEyeSlash size={24} color={annotationCount > 0 ? iconColor : theme.iconDisabled} />
+                )}
+              </AnimatedButton>
+
+              <AnimatedButton
                 onPress={handleCopyPress}
                 disabled={annotationCount === 0}
                 style={[
@@ -403,7 +426,7 @@ export function Toolbar(props: ToolbarProps) {
                   annotationCount === 0 && styles.toolbarButtonDisabled,
                 ]}
               >
-                <IconCopy size={18} color={annotationCount > 0 ? iconColor : theme.iconDisabled} />
+                <IconCopy size={24} color={annotationCount > 0 ? iconColor : theme.iconDisabled} />
               </AnimatedButton>
 
               <AnimatedButton
@@ -414,26 +437,20 @@ export function Toolbar(props: ToolbarProps) {
                   annotationCount === 0 && styles.toolbarButtonDisabled,
                 ]}
               >
-                <IconTrash size={18} color={annotationCount > 0 ? iconColor : theme.iconDisabled} />
+                <IconTrash size={24} color={annotationCount > 0 ? iconColor : theme.iconDisabled} />
               </AnimatedButton>
 
               <AnimatedButton onPress={handleSettingsPress} style={styles.toolbarButton}>
-                <IconGear size={18} color={iconColor} />
+                <IconGear size={24} color={iconColor} />
               </AnimatedButton>
 
+              <View style={[styles.toolbarDivider, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)' }]} />
+
               <AnimatedButton onPress={handleFabPress} style={styles.toolbarButton}>
-                <IconClose size={18} color={iconColor} />
+                <IconClose size={24} color={iconColor} />
               </AnimatedButton>
             </View>
           </FloatingContainer>
-
-          {annotationCount > 0 && (
-            <View style={[styles.badgeExpanded, { backgroundColor: badgeColor }]}>
-              <Text style={styles.badgeText}>
-                {annotationCount > 99 ? '99+' : annotationCount}
-              </Text>
-            </View>
-          )}
         </Animated.View>
       </View>
     </View>
@@ -489,6 +506,11 @@ const styles = StyleSheet.create({
   toolbarButtonDisabled: {
     opacity: 0.35,
   },
+  toolbarDivider: {
+    width: 1,
+    height: 12,
+    marginHorizontal: 2,
+  },
 
   floatingBackground: {
     ...Platform.select({
@@ -505,28 +527,6 @@ const styles = StyleSheet.create({
   },
 
   badge: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 5,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  badgeExpanded: {
     position: 'absolute',
     top: -8,
     right: -8,

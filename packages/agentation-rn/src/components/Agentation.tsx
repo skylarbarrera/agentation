@@ -110,6 +110,7 @@ export function Agentation({
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [showMarkers, setShowMarkers] = useState(true);
   const contentRef = useRef<View>(null);
 
   useEffect(() => {
@@ -136,6 +137,10 @@ export function Agentation({
 
   const handleSettingsMenuChange = useCallback((isOpen: boolean) => {
     setIsSettingsMenuOpen(isOpen);
+  }, []);
+
+  const handleShowMarkersChange = useCallback((show: boolean) => {
+    setShowMarkers(show);
   }, []);
 
   const reportScrollOffset = useCallback((x: number, y: number) => {
@@ -194,6 +199,9 @@ export function Agentation({
       } else {
         onAnnotationModeDisabled?.();
         setSelectedAnnotation(null);
+        setPopupVisible(false);
+        setPendingTap(null);
+        setPendingDetection(null);
       }
       return newMode;
     });
@@ -350,23 +358,25 @@ export function Agentation({
             />
           )}
 
-          <View style={styles.markersContainer} pointerEvents="box-none">
-            {visibleAnnotations.map((annotation, index) => (
-              <AnnotationMarker
-                key={annotation.id}
-                annotation={annotation}
-                index={index}
-                isSelected={selectedAnnotation?.id === annotation.id}
-                onPress={() => handleMarkerPress(annotation)}
-                onEdit={handleMarkerEdit}
-                onDelete={handleMarkerDelete}
-                scrollOffset={scrollOffset}
-                color={settings.annotationColor}
-                isRemoving={removingIds.has(annotation.id)}
-                onRemoveComplete={() => handleMarkerRemoveComplete(annotation.id)}
-              />
-            ))}
-          </View>
+          {showMarkers && (
+            <View style={styles.markersContainer} pointerEvents="box-none">
+              {visibleAnnotations.map((annotation, index) => (
+                <AnnotationMarker
+                  key={annotation.id}
+                  annotation={annotation}
+                  index={index}
+                  isSelected={selectedAnnotation?.id === annotation.id}
+                  onPress={() => handleMarkerPress(annotation)}
+                  onEdit={handleMarkerEdit}
+                  onDelete={handleMarkerDelete}
+                  scrollOffset={scrollOffset}
+                  color={settings.annotationColor}
+                  isRemoving={removingIds.has(annotation.id)}
+                  onRemoveComplete={() => handleMarkerRemoveComplete(annotation.id)}
+                />
+              ))}
+            </View>
+          )}
 
           <AnnotationPopup
             annotation={selectedAnnotation}
@@ -411,6 +421,8 @@ export function Agentation({
             clearAfterCopy={settings.clearAfterCopy}
             onClearAfterCopyChange={handleClearAfterCopyChange}
             onSettingsMenuChange={handleSettingsMenuChange}
+            showMarkers={showMarkers}
+            onShowMarkersChange={handleShowMarkersChange}
           />
         </>
       </View>

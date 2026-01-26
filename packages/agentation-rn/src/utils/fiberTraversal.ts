@@ -1,11 +1,3 @@
-/**
- * Fiber Traversal - Using React Native's built-in Inspector API
- *
- * Uses getInspectorDataForViewAtPoint from the React DevTools hook
- * which is the official way to get component info in React Native.
- */
-
-import { findNodeHandle } from 'react-native';
 import { debugLog } from './debug';
 
 export interface FiberCodeInfo {
@@ -23,9 +15,8 @@ export interface InspectorData {
       lineNumber: number;
       columnNumber?: number;
     };
-    // RN Inspector provides getInspectorData method on hierarchy items
-    getInspectorData?: (findNodeHandle: any) => {
-      props: Record<string, any>;
+    getInspectorData?: (findNodeHandle: (instance: unknown) => number | null) => {
+      props: Record<string, unknown>;
       measure: (callback: (x: number, y: number, width: number, height: number, left: number, top: number) => void) => void;
     };
   }>;
@@ -39,20 +30,42 @@ export interface InspectorData {
   touchedViewTag?: number;
 }
 
-// Declare the global hook type
+interface FiberNode {
+  type: unknown;
+  _debugSource?: {
+    fileName?: string;
+    lineNumber?: number;
+    columnNumber?: number;
+  };
+  memoizedProps?: Record<string, unknown>;
+  pendingProps?: Record<string, unknown>;
+  stateNode?: { _nativeTag?: number };
+  return: FiberNode | null;
+  child: FiberNode | null;
+  sibling: FiberNode | null;
+}
+
+interface ReactRenderer {
+  rendererConfig?: {
+    getInspectorDataForViewAtPoint?: (
+      viewRef: unknown,
+      x: number,
+      y: number,
+      callback: (data: InspectorData | null) => void
+    ) => void;
+  };
+  findFiberByHostInstance?: (instance: unknown) => FiberNode | null;
+}
+
 declare global {
   var __REACT_DEVTOOLS_GLOBAL_HOOK__: {
-    renderers?: Map<number, any>;
-    getFiberRoots?: (rendererId: number) => Set<any>;
+    renderers?: Map<number, ReactRenderer>;
+    getFiberRoots?: (rendererId: number) => Set<{ current: FiberNode }>;
   } | undefined;
 }
 
-/**
- * Get inspector data for a view at specific coordinates
- * This uses React Native's built-in inspector API
- */
 export function getInspectorDataForViewAtPoint(
-  viewRef: any,
+  viewRef: unknown,
   x: number,
   y: number
 ): Promise<InspectorData | null> {
@@ -66,7 +79,6 @@ export function getInspectorDataForViewAtPoint(
 
     debugLog(' Renderers available:', hook.renderers.size);
 
-    // Get the renderer's inspector function (via rendererConfig, not directly on renderer)
     for (const [rendererId, renderer] of hook.renderers) {
       const hasAPI = !!renderer?.rendererConfig?.getInspectorDataForViewAtPoint;
       debugLog(' Renderer', rendererId, 'has rendererConfig.getInspectorDataForViewAtPoint:', hasAPI);
@@ -77,13 +89,12 @@ export function getInspectorDataForViewAtPoint(
             viewRef,
             x,
             y,
-            (data: any) => {
+            (data: InspectorData | null) => {
               debugLog(' Inspector data received');
               if (data) {
                 debugLog(' Hierarchy length:', data.hierarchy?.length);
                 debugLog(' Selected index:', data.selectedIndex);
-                // Log each hierarchy item
-                data.hierarchy?.forEach((item: any, i: number) => {
+                data.hierarchy?.forEach((item, i) => {
                   debugLog(`Hierarchy[${i}]: name=${item.name}, hasSource=${!!item.source}`);
                   if (item.source) {
                     debugLog(`  Source: ${item.source.fileName}:${item.source.lineNumber}`);
@@ -106,23 +117,18 @@ export function getInspectorDataForViewAtPoint(
   });
 }
 
-/**
- * Get Fiber node from React Native view instance
- * Fallback method when inspector API isn't available
- */
-export function getFiberFromInstance(instance: any): any | null {
+export function getFiberFromInstance(instance: unknown): FiberNode | null {
   if (!instance) return null;
 
-  // If it's a number (native tag), try to find via DevTools hook
   if (typeof instance === 'number') {
     return getFiberFromNativeTag(instance);
   }
 
-  // If it's an object, try internal properties
-  if (typeof instance === 'object') {
-    for (const key of Object.keys(instance)) {
+  if (typeof instance === 'object' && instance !== null) {
+    const obj = instance as Record<string, FiberNode>;
+    for (const key of Object.keys(obj)) {
       if (key.startsWith('__reactFiber$') || key.startsWith('__reactInternalInstance$')) {
-        return instance[key];
+        return obj[key];
       }
     }
 
@@ -144,7 +150,7 @@ export function getFiberFromInstance(instance: any): any | null {
   return null;
 }
 
-function getFiberFromNativeTag(tag: number): any | null {
+function getFiberFromNativeTag(tag: number): FiberNode | null {
   debugLog(' getFiberFromNativeTag called with tag:', tag);
   const hook = global.__REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (!hook || !hook.renderers || !hook.getFiberRoots) {
@@ -171,7 +177,7 @@ function getFiberFromNativeTag(tag: number): any | null {
   return null;
 }
 
-function findFiberByNativeTag(fiber: any, tag: number): any | null {
+function findFiberByNativeTag(fiber: FiberNode | null, tag: number): FiberNode | null {
   if (!fiber) return null;
   if (fiber.stateNode && fiber.stateNode._nativeTag === tag) return fiber;
   const childResult = findFiberByNativeTag(fiber.child, tag);
@@ -179,20 +185,15 @@ function findFiberByNativeTag(fiber: any, tag: number): any | null {
   return findFiberByNativeTag(fiber.sibling, tag);
 }
 
-/**
- * Find nearest user component with source info
- * Checks both React 18's _debugSource and react-native-dev-inspector's __callerSource prop
- */
-export function findNearestUserComponentWithSource(fiber: any): FiberCodeInfo | null {
+export function findNearestUserComponentWithSource(fiber: FiberNode | null): FiberCodeInfo | null {
   if (!fiber) return null;
 
-  let current = fiber;
+  let current: FiberNode | null = fiber;
   let iterations = 0;
 
   while (current && iterations < 50) {
     iterations++;
 
-    // React 18 style: _debugSource on fiber
     if (current._debugSource) {
       debugLog(' Found _debugSource on fiber');
       return {
@@ -203,14 +204,18 @@ export function findNearestUserComponentWithSource(fiber: any): FiberCodeInfo | 
       };
     }
 
-    // React 19 + react-native-dev-inspector: __callerSource in props
     const props = current.memoizedProps || current.pendingProps;
-    if (props && props.__callerSource) {
-      debugLog(' Found __callerSource in props:', JSON.stringify(props.__callerSource));
+    if (props && (props as Record<string, unknown>).__callerSource) {
+      const callerSource = (props as Record<string, unknown>).__callerSource as {
+        fileName?: string;
+        lineNumber?: number;
+        columnNumber?: number;
+      };
+      debugLog(' Found __callerSource in props:', JSON.stringify(callerSource));
       return {
-        fileName: props.__callerSource.fileName || 'unknown',
-        lineNumber: props.__callerSource.lineNumber || 0,
-        columnNumber: props.__callerSource.columnNumber,
+        fileName: callerSource.fileName || 'unknown',
+        lineNumber: callerSource.lineNumber || 0,
+        columnNumber: callerSource.columnNumber,
         componentName: getComponentName(current),
       };
     }
@@ -221,13 +226,10 @@ export function findNearestUserComponentWithSource(fiber: any): FiberCodeInfo | 
   return null;
 }
 
-/**
- * Find any user component (even without source)
- */
-export function findNearestUserComponent(fiber: any): FiberCodeInfo | null {
+export function findNearestUserComponent(fiber: FiberNode | null): FiberCodeInfo | null {
   if (!fiber) return null;
 
-  let current = fiber;
+  let current: FiberNode | null = fiber;
   let iterations = 0;
   let hostName: string | null = null;
 
@@ -240,7 +242,8 @@ export function findNearestUserComponent(fiber: any): FiberCodeInfo | null {
     }
 
     if (type && typeof type === 'function') {
-      const name = type.displayName || type.name;
+      const funcType = type as { displayName?: string; name?: string };
+      const name = funcType.displayName || funcType.name;
       if (name && name !== 'Anonymous' && !name.startsWith('_')) {
         return {
           fileName: 'unknown',
@@ -264,10 +267,13 @@ export function findNearestUserComponent(fiber: any): FiberCodeInfo | null {
   return null;
 }
 
-function getComponentName(fiber: any): string {
+function getComponentName(fiber: FiberNode): string {
   if (!fiber || !fiber.type) return 'Unknown';
   const type = fiber.type;
-  if (typeof type === 'function') return type.displayName || type.name || 'Anonymous';
+  if (typeof type === 'function') {
+    const funcType = type as { displayName?: string; name?: string };
+    return funcType.displayName || funcType.name || 'Anonymous';
+  }
   if (typeof type === 'string') return type;
   return 'Unknown';
 }

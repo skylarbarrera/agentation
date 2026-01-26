@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import type { AnnotationMarkerProps, Annotation } from '../types';
+import { TIMING } from '../utils/animations';
 
 interface MarkerProps extends Omit<AnnotationMarkerProps, 'annotation' | 'index' | 'onPress' | 'onLongPress'> {
   annotation?: Annotation;
@@ -25,15 +26,19 @@ interface MarkerProps extends Omit<AnnotationMarkerProps, 'annotation' | 'index'
   isEditing?: boolean;
   skipEntryAnimation?: boolean;
   color?: string;
+  isRemoving?: boolean;
+  onRemoveComplete?: () => void;
 }
 
-export function AnnotationMarker(props: (AnnotationMarkerProps & {
+export const AnnotationMarker = memo(function AnnotationMarker(props: (AnnotationMarkerProps & {
   scrollOffset?: { x: number; y: number };
   onEdit?: (annotation: Annotation) => void;
   onDelete?: (id: string) => void;
   isEditing?: boolean;
   skipEntryAnimation?: boolean;
   color?: string;
+  isRemoving?: boolean;
+  onRemoveComplete?: () => void;
 }) | MarkerProps) {
   const { isSelected, onPress, onLongPress } = props;
 
@@ -47,20 +52,49 @@ export function AnnotationMarker(props: (AnnotationMarkerProps & {
   const onDelete = 'onDelete' in props ? props.onDelete : undefined;
   const skipEntryAnimation = 'skipEntryAnimation' in props ? props.skipEntryAnimation : false;
   const color = 'color' in props ? props.color : '#3c82f7';
+  const isRemoving = 'isRemoving' in props ? props.isRemoving : false;
+  const onRemoveComplete = 'onRemoveComplete' in props ? props.onRemoveComplete : undefined;
 
-  const markerSize = 32;
+  const markerSize = 22;
 
   const opacityAnim = useRef(new Animated.Value(skipEntryAnimation ? 1 : 0)).current;
+  const scaleAnim = useRef(new Animated.Value(skipEntryAnimation ? 1 : 0.3)).current;
 
   useEffect(() => {
     if (skipEntryAnimation) return;
 
-    Animated.timing(opacityAnim, {
-      toValue: 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [opacityAnim, skipEntryAnimation]);
+    Animated.parallel([
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: TIMING.entrance,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: TIMING.entrance,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [opacityAnim, scaleAnim, skipEntryAnimation]);
+
+  useEffect(() => {
+    if (isRemoving) {
+      Animated.parallel([
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: TIMING.exit,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.3,
+          duration: TIMING.exit,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        onRemoveComplete?.();
+      });
+    }
+  }, [isRemoving, opacityAnim, scaleAnim, onRemoveComplete]);
 
   const adjustedX = x - (scrollOffset?.x || 0);
   const adjustedY = y - (scrollOffset?.y || 0);
@@ -150,6 +184,7 @@ export function AnnotationMarker(props: (AnnotationMarkerProps & {
           width: markerSize,
           height: markerSize,
           opacity: opacityAnim,
+          transform: [{ scale: scaleAnim }],
         },
         isSelected && styles.markerSelected,
       ]}
@@ -165,10 +200,10 @@ export function AnnotationMarker(props: (AnnotationMarkerProps & {
       </TouchableOpacity>
     </Animated.View>
   );
-}
+});
 
 export function PendingMarker({ x, y, color = '#3c82f7' }: { x: number; y: number; color?: string }) {
-  const markerSize = 32;
+  const markerSize = 22;
 
   return (
     <View
@@ -209,15 +244,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#3c82f7',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.04)',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
       },
       android: {
-        elevation: 5,
+        elevation: 4,
       },
     }),
   },
@@ -232,12 +269,12 @@ const styles = StyleSheet.create({
   },
   markerText: {
     color: 'white',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
   },
   markerPlus: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '400',
     marginTop: -1,
   },

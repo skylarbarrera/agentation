@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -12,10 +12,12 @@ import {
   ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IconListSparkle, IconClose, IconCopy, IconTrash, IconGear } from './Icons';
-import type { OutputDetailLevel, AgenationSettings } from '../types';
-import { DEFAULT_SETTINGS, COLOR_OPTIONS } from '../types';
-import { loadSettings, saveSettings } from '../utils/storage';
+import { IconListSparkle, IconClose, IconCopy, IconTrash, IconGear, IconSun, IconMoon } from './Icons';
+import type { OutputDetailLevel } from '../types';
+import { useToolbarAnimations } from '../hooks/useToolbarAnimations';
+import { useToolbarSettings } from '../hooks/useToolbarSettings';
+// @ts-expect-error - importing version from package.json
+import { version as __VERSION__ } from '../../package.json';
 
 const DETAIL_LEVEL_LABELS: Record<OutputDetailLevel, string> = {
   compact: 'Compact',
@@ -23,14 +25,6 @@ const DETAIL_LEVEL_LABELS: Record<OutputDetailLevel, string> = {
   detailed: 'Detailed',
   forensic: 'Forensic',
 };
-
-const DETAIL_LEVEL_ORDER: OutputDetailLevel[] = ['compact', 'standard', 'detailed', 'forensic'];
-
-function getNextDetailLevel(current: OutputDetailLevel): OutputDetailLevel {
-  const currentIndex = DETAIL_LEVEL_ORDER.indexOf(current);
-  const nextIndex = (currentIndex + 1) % DETAIL_LEVEL_ORDER.length;
-  return DETAIL_LEVEL_ORDER[nextIndex];
-}
 
 interface FloatingContainerProps {
   children: React.ReactNode;
@@ -44,7 +38,6 @@ function FloatingContainer({ children, style }: FloatingContainerProps) {
     </View>
   );
 }
-
 
 interface AnimatedButtonProps {
   onPress: () => void;
@@ -125,45 +118,18 @@ export function Toolbar(props: ToolbarProps) {
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  const [internalSettings, setInternalSettings] = useState<AgenationSettings>(DEFAULT_SETTINGS);
+  const [isDarkMode, setIsDarkMode] = useState(true); // Mock state for demo
 
-  const expandAnim = useRef(new Animated.Value(0)).current;
-  const settingsAnim = useRef(new Animated.Value(0)).current;
+  const animations = useToolbarAnimations(isExpanded, showSettingsMenu, annotationCount);
 
-  const fabOpacity = expandAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0],
+  const settings = useToolbarSettings({
+    controlledOutputDetail,
+    onOutputDetailChange,
+    controlledClearAfterCopy,
+    onClearAfterCopyChange,
+    controlledAnnotationColor,
+    onAnnotationColorChange,
   });
-  const toolbarOpacity = expandAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
-
-  const settingsOpacity = settingsAnim;
-
-  const currentOutputDetail = controlledOutputDetail ?? internalSettings.outputDetail;
-  const currentClearAfterCopy = controlledClearAfterCopy ?? internalSettings.clearAfterCopy;
-  const currentAnnotationColor = controlledAnnotationColor ?? internalSettings.annotationColor;
-
-  useEffect(() => {
-    loadSettings().then(setInternalSettings);
-  }, []);
-
-  useEffect(() => {
-    Animated.timing(expandAnim, {
-      toValue: isExpanded ? 1 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [isExpanded, expandAnim]);
-
-  useEffect(() => {
-    Animated.timing(settingsAnim, {
-      toValue: showSettingsMenu ? 1 : 0,
-      duration: 150,
-      useNativeDriver: true,
-    }).start();
-  }, [showSettingsMenu, settingsAnim]);
 
   const handleFabPress = useCallback(() => {
     if (!isExpanded) {
@@ -206,46 +172,11 @@ export function Toolbar(props: ToolbarProps) {
     });
   }, [onSettingsMenuChange]);
 
-  const handleOutputDetailCycle = useCallback(() => {
-    const nextLevel = getNextDetailLevel(currentOutputDetail);
-    if (onOutputDetailChange) {
-      onOutputDetailChange(nextLevel);
-    } else {
-      const newSettings = { ...internalSettings, outputDetail: nextLevel };
-      setInternalSettings(newSettings);
-      saveSettings({ outputDetail: nextLevel });
-    }
-  }, [currentOutputDetail, onOutputDetailChange, internalSettings]);
-
-  const handleClearAfterCopyToggle = useCallback(() => {
-    const newValue = !currentClearAfterCopy;
-    if (onClearAfterCopyChange) {
-      onClearAfterCopyChange(newValue);
-    } else {
-      const newSettings = { ...internalSettings, clearAfterCopy: newValue };
-      setInternalSettings(newSettings);
-      saveSettings({ clearAfterCopy: newValue });
-    }
-  }, [currentClearAfterCopy, onClearAfterCopyChange, internalSettings]);
-
-  const handleAnnotationColorCycle = useCallback(() => {
-    const currentIndex = COLOR_OPTIONS.findIndex(c => c.value === currentAnnotationColor);
-    const nextIndex = (currentIndex + 1) % COLOR_OPTIONS.length;
-    const nextColor = COLOR_OPTIONS[nextIndex].value;
-    if (onAnnotationColorChange) {
-      onAnnotationColorChange(nextColor);
-    } else {
-      const newSettings = { ...internalSettings, annotationColor: nextColor };
-      setInternalSettings(newSettings);
-      saveSettings({ annotationColor: nextColor });
-    }
-  }, [currentAnnotationColor, onAnnotationColorChange, internalSettings]);
-
   const bottomPosition = Math.max(insets.bottom, 16) + 16 + (offset?.y ?? 0);
   const rightPosition = 20 + (offset?.x ?? 0);
 
   const iconColor = '#FFFFFF';
-  const badgeColor = currentAnnotationColor;
+  const badgeColor = settings.currentAnnotationColor;
 
   const containerStyle = [styles.container, { zIndex, bottom: bottomPosition, right: rightPosition }];
 
@@ -254,41 +185,85 @@ export function Toolbar(props: ToolbarProps) {
       <Animated.View
         style={[
           styles.settingsMenuWrapper,
-          { opacity: settingsOpacity },
+          {
+            opacity: animations.settingsOpacity,
+            transform: [
+              { scale: animations.settingsScale },
+              { translateY: animations.settingsTranslateY },
+            ],
+          },
         ]}
         pointerEvents={showSettingsMenu ? 'auto' : 'none'}
       >
         <FloatingContainer style={styles.settingsMenu}>
-          <TouchableOpacity
-            style={styles.settingsRow}
-            onPress={handleOutputDetailCycle}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.settingsLabel}>Output Detail</Text>
-            <Text style={styles.settingsValueText}>
-              {DETAIL_LEVEL_LABELS[currentOutputDetail]}
+          {/* Header */}
+          <View style={styles.settingsHeader}>
+            <Text style={styles.settingsBrand}>
+              <Text style={[styles.settingsBrandSlash, { color: settings.currentAnnotationColor }]}>/</Text>
+              agentation
             </Text>
-          </TouchableOpacity>
+            <Text style={styles.settingsVersion}>v{__VERSION__}</Text>
+            <TouchableOpacity
+              style={styles.themeToggle}
+              onPress={() => setIsDarkMode(!isDarkMode)}
+              activeOpacity={0.7}
+            >
+              {isDarkMode ? <IconSun size={14} color="rgba(255, 255, 255, 0.4)" /> : <IconMoon size={14} color="rgba(255, 255, 255, 0.4)" />}
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity
-            style={styles.settingsRow}
-            onPress={handleClearAfterCopyToggle}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.settingsLabel}>Clear After Copy</Text>
-            <View style={[styles.checkbox, currentClearAfterCopy && styles.checkboxChecked]}>
-              {currentClearAfterCopy && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-          </TouchableOpacity>
+          {/* Output Detail Section */}
+          <View style={styles.settingsSectionFirst}>
+            <TouchableOpacity
+              style={styles.settingsRow}
+              onPress={settings.handleOutputDetailCycle}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.settingsLabel}>Output Detail</Text>
+              <View style={styles.settingsValueWithDots}>
+                <Text style={styles.settingsValueText}>
+                  {DETAIL_LEVEL_LABELS[settings.currentOutputDetail]}
+                </Text>
+                <View style={styles.cycleDots}>
+                  {(['compact', 'standard', 'detailed', 'forensic'] as OutputDetailLevel[]).map((level) => (
+                    <View
+                      key={level}
+                      style={[
+                        styles.cycleDot,
+                        settings.currentOutputDetail === level && styles.cycleDotActive,
+                      ]}
+                    />
+                  ))}
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity
-            style={styles.settingsRow}
-            onPress={handleAnnotationColorCycle}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.settingsLabel}>Marker Color</Text>
-            <View style={[styles.colorSwatch, { backgroundColor: currentAnnotationColor }]} />
-          </TouchableOpacity>
+          {/* Marker Colour Section */}
+          <View style={styles.settingsSection}>
+            <TouchableOpacity
+              style={styles.settingsRow}
+              onPress={settings.handleAnnotationColorCycle}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.settingsLabel}>Marker Colour</Text>
+              <View style={[styles.colorSwatch, { backgroundColor: settings.currentAnnotationColor }]} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Toggles Section */}
+          <View style={styles.settingsSection}>
+            <TouchableOpacity
+              style={styles.toggleRow}
+              onPress={settings.handleClearAfterCopyToggle}
+              activeOpacity={0.6}
+            >
+              <View style={[styles.checkbox, settings.currentClearAfterCopy && styles.checkboxChecked]}>
+                {settings.currentClearAfterCopy && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.toggleLabel}>Clear after output</Text>
+            </TouchableOpacity>
+          </View>
         </FloatingContainer>
       </Animated.View>
 
@@ -296,36 +271,47 @@ export function Toolbar(props: ToolbarProps) {
         <Animated.View
           style={[
             styles.fabWrapper,
-            { opacity: fabOpacity },
+            {
+              opacity: animations.fabOpacity,
+              transform: [
+                { scale: animations.entranceScale },
+                { rotate: animations.entranceRotateInterpolate },
+              ],
+            },
           ]}
           pointerEvents={isExpanded ? 'none' : 'auto'}
         >
           <AnimatedButton onPress={handleFabPress} style={styles.fab}>
             <FloatingContainer style={styles.fabGlass}>
-              <IconListSparkle size={24} color={iconColor} />
+              <IconListSparkle size={20} color={iconColor} />
             </FloatingContainer>
           </AnimatedButton>
 
           {annotationCount > 0 && (
-            <View style={[styles.badge, { backgroundColor: badgeColor }]}>
+            <Animated.View
+              style={[
+                styles.badge,
+                { backgroundColor: badgeColor, transform: [{ scale: animations.badgeScale }] },
+              ]}
+            >
               <Text style={styles.badgeText}>
                 {annotationCount > 99 ? '99+' : annotationCount}
               </Text>
-            </View>
+            </Animated.View>
           )}
         </Animated.View>
 
         <Animated.View
           style={[
             styles.expandedWrapper,
-            { opacity: toolbarOpacity },
+            { opacity: animations.toolbarOpacity },
           ]}
           pointerEvents={isExpanded ? 'auto' : 'none'}
         >
           <FloatingContainer style={styles.toolbar}>
             <View style={styles.toolbarButtons}>
               <AnimatedButton onPress={handleFabPress} style={styles.toolbarButton}>
-                <IconClose size={22} color={iconColor} />
+                <IconClose size={18} color={iconColor} />
               </AnimatedButton>
 
               <AnimatedButton
@@ -336,7 +322,7 @@ export function Toolbar(props: ToolbarProps) {
                   annotationCount === 0 && styles.toolbarButtonDisabled,
                 ]}
               >
-                <IconCopy size={22} color={annotationCount > 0 ? iconColor : '#666'} />
+                <IconCopy size={18} color={annotationCount > 0 ? iconColor : '#666'} />
               </AnimatedButton>
 
               <AnimatedButton
@@ -347,11 +333,11 @@ export function Toolbar(props: ToolbarProps) {
                   annotationCount === 0 && styles.toolbarButtonDisabled,
                 ]}
               >
-                <IconTrash size={22} color={annotationCount > 0 ? iconColor : '#666'} />
+                <IconTrash size={18} color={annotationCount > 0 ? iconColor : '#666'} />
               </AnimatedButton>
 
               <AnimatedButton onPress={handleSettingsPress} style={styles.toolbarButton}>
-                <IconGear size={22} color={iconColor} />
+                <IconGear size={18} color={iconColor} />
               </AnimatedButton>
             </View>
           </FloatingContainer>
@@ -386,15 +372,15 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     overflow: 'hidden',
   },
   fabGlass: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -403,26 +389,26 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   toolbar: {
-    borderRadius: 28,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    borderRadius: 24,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
   },
   toolbarButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   toolbarButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     justifyContent: 'center',
     alignItems: 'center',
   },
   toolbarButtonDisabled: {
-    opacity: 0.4,
+    opacity: 0.35,
   },
 
   floatingBackground: {
@@ -430,41 +416,63 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 12,
+        elevation: 8,
       },
     }),
   },
 
   badge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
+    top: -8,
+    right: -8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   badgeExpanded: {
     position: 'absolute',
     top: -8,
     right: -8,
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
 
@@ -472,52 +480,115 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   settingsMenu: {
-    borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    minWidth: 205,
+  },
+  settingsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 24,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.07)',
+  },
+  settingsBrand: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.12,
+    color: '#FFFFFF',
+  },
+  settingsBrandSlash: {
+    color: 'rgba(255, 255, 255, 0.5)',
+  },
+  settingsVersion: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.4)',
+    marginLeft: 'auto',
+    letterSpacing: -0.12,
+  },
+  themeToggle: {
+    width: 22,
+    height: 22,
+    marginLeft: 8,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingsSectionFirst: {
+    paddingTop: 8,
+  },
+  settingsSection: {
+    paddingTop: 8,
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.07)',
   },
   settingsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    minWidth: 170,
+    minHeight: 24,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 24,
   },
   settingsLabel: {
-    color: 'rgba(255, 255, 255, 0.55)',
+    color: 'rgba(255, 255, 255, 0.5)',
     fontSize: 13,
     fontWeight: '400',
   },
-  settingsValue: {
-    paddingHorizontal: 4,
+  toggleLabel: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '400',
+    marginLeft: 8,
   },
   settingsValueText: {
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '500',
   },
-  settingsToggle: {
-    paddingHorizontal: 4,
+  settingsValueWithDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  settingsToggleActive: {},
-  settingsToggleText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '500',
+  cycleDots: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 2,
+  },
+  cycleDot: {
+    width: 2,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  cycleDotActive: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: '#FFFFFF',
   },
   colorSwatch: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
   },
   checkbox: {
-    width: 18,
-    height: 18,
+    width: 16,
+    height: 16,
     borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 2, // align with 20px swatch
   },
   checkboxChecked: {
     backgroundColor: '#FFFFFF',
@@ -525,7 +596,7 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: '#1a1a1a',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     marginTop: -1,
   },

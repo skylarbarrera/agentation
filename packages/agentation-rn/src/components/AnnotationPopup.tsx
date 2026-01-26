@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import type { AnnotationPopupProps } from '../types';
 import { PendingMarker } from './AnnotationMarker';
+import { TIMING } from '../utils/animations';
 
 const COLORS = {
   background: '#1a1a1a',
@@ -71,17 +72,17 @@ export function AnnotationPopup(props: ExtendedPopupProps) {
       Animated.parallel([
         Animated.timing(scaleAnim, {
           toValue: 1,
-          duration: 200,
+          duration: TIMING.normal,
           useNativeDriver: true,
         }),
         Animated.timing(translateYAnim, {
           toValue: 0,
-          duration: 200,
+          duration: TIMING.normal,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
-          duration: 200,
+          duration: TIMING.normal,
           useNativeDriver: true,
         }),
       ]).start();

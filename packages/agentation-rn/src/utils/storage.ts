@@ -1,32 +1,14 @@
-/**
- * Storage Utilities
- * Wraps AsyncStorage for annotation and settings persistence
- *
- * Web API Parity: Supports settings storage for outputDetail and clearAfterCopy
- */
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Annotation, StorageKey, AgenationSettings } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import { debugError } from './debug';
 
-// =============================================================================
-// Constants
-// =============================================================================
-
 const SETTINGS_KEY = '@agentation:settings';
 
-/**
- * Generate storage key for a screen
- * Format: @agentation:ScreenName
- */
 export function getStorageKey(screenName: string): StorageKey {
   return `@agentation:${screenName}`;
 }
 
-/**
- * Save annotations to AsyncStorage
- */
 export async function saveAnnotations(
   screenName: string,
   annotations: Annotation[]
@@ -41,9 +23,6 @@ export async function saveAnnotations(
   }
 }
 
-/**
- * Load annotations from AsyncStorage
- */
 export async function loadAnnotations(
   screenName: string
 ): Promise<Annotation[]> {
@@ -63,9 +42,6 @@ export async function loadAnnotations(
   }
 }
 
-/**
- * Clear annotations for a screen
- */
 export async function clearAnnotations(screenName: string): Promise<void> {
   try {
     const key = getStorageKey(screenName);
@@ -76,9 +52,6 @@ export async function clearAnnotations(screenName: string): Promise<void> {
   }
 }
 
-/**
- * Get all annotation keys
- */
 export async function getAllAnnotationKeys(): Promise<string[]> {
   try {
     const allKeys = await AsyncStorage.getAllKeys();
@@ -89,9 +62,6 @@ export async function getAllAnnotationKeys(): Promise<string[]> {
   }
 }
 
-/**
- * Clear all annotations (all screens)
- */
 export async function clearAllAnnotations(): Promise<void> {
   try {
     const keys = await getAllAnnotationKeys();
@@ -102,14 +72,6 @@ export async function clearAllAnnotations(): Promise<void> {
   }
 }
 
-// =============================================================================
-// Settings Storage (Web API Parity)
-// =============================================================================
-
-/**
- * Save settings to AsyncStorage
- * Merges with existing settings (partial update supported)
- */
 export async function saveSettings(
   settings: Partial<AgenationSettings>
 ): Promise<void> {
@@ -124,10 +86,6 @@ export async function saveSettings(
   }
 }
 
-/**
- * Load settings from AsyncStorage
- * Returns DEFAULT_SETTINGS if none stored
- */
 export async function loadSettings(): Promise<AgenationSettings> {
   try {
     const json = await AsyncStorage.getItem(SETTINGS_KEY);
@@ -137,7 +95,6 @@ export async function loadSettings(): Promise<AgenationSettings> {
     }
 
     const stored = JSON.parse(json) as Partial<AgenationSettings>;
-    // Merge with defaults to ensure all fields exist
     return { ...DEFAULT_SETTINGS, ...stored };
   } catch (error) {
     debugError('Failed to load settings:', error);
@@ -145,9 +102,6 @@ export async function loadSettings(): Promise<AgenationSettings> {
   }
 }
 
-/**
- * Reset settings to defaults
- */
 export async function resetSettings(): Promise<void> {
   try {
     await AsyncStorage.removeItem(SETTINGS_KEY);

@@ -1,11 +1,3 @@
-/**
- * Component Detection Utilities
- * Custom implementation using direct Fiber tree access
- *
- * Replaces react-native-dev-inspector to avoid DevTools conflicts.
- * Extracts source paths in format: "src/components/Button.tsx:42"
- */
-
 import { debugLog, debugWarn, debugError } from './debug';
 import type { CodeInfo, ComponentDetection } from '../types';
 import {
@@ -18,18 +10,23 @@ import {
   type FiberCodeInfo,
 } from './fiberTraversal';
 
-/**
- * Measure view bounds using React Native's UIManager
- */
-async function measureView(viewInstance: any): Promise<{ x: number; y: number; width: number; height: number } | null> {
+interface MeasurableView {
+  measure: (callback: (x: number, y: number, width: number, height: number, pageX: number, pageY: number) => void) => void;
+}
+
+function isMeasurable(view: unknown): view is MeasurableView {
+  return view !== null && typeof view === 'object' && 'measure' in view && typeof (view as MeasurableView).measure === 'function';
+}
+
+async function measureView(viewInstance: unknown): Promise<{ x: number; y: number; width: number; height: number } | null> {
   return new Promise((resolve) => {
     try {
-      if (!viewInstance || !viewInstance.measure) {
+      if (!isMeasurable(viewInstance)) {
         resolve(null);
         return;
       }
 
-      viewInstance.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
+      viewInstance.measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
         resolve({
           x: pageX,
           y: pageY,
@@ -44,9 +41,6 @@ async function measureView(viewInstance: any): Promise<{ x: number; y: number; w
   });
 }
 
-/**
- * Convert FiberCodeInfo to CodeInfo format
- */
 function convertCodeInfo(fiberInfo: FiberCodeInfo): CodeInfo {
   return {
     relativePath: extractRelativePath(fiberInfo.fileName),
@@ -56,30 +50,9 @@ function convertCodeInfo(fiberInfo: FiberCodeInfo): CodeInfo {
   };
 }
 
-/**
- * Detect component from a React Native view instance
- *
- * This is the core function that:
- * 1. Gets React fiber from view instance
- * 2. Extracts source code location
- * 3. Measures component bounds
- *
- * @param viewInstance - React Native view instance (from ref.current or tap event)
- * @returns ComponentDetection with code info and bounds
- *
- * @example
- * ```tsx
- * const detection = await detectComponent(buttonRef.current);
- * if (detection.success) {
- *   console.log('Source:', detection.codeInfo?.relativePath);
- *   console.log('Line:', detection.codeInfo?.lineNumber);
- * }
- * ```
- */
 export async function detectComponent(
   viewInstance: unknown
 ): Promise<ComponentDetection> {
-  // Validate dev mode
   if (!__DEV__) {
     return {
       success: false,
@@ -90,12 +63,9 @@ export async function detectComponent(
   }
 
   try {
-    // Get Fiber node from view instance
     const fiber = getFiberFromInstance(viewInstance);
 
-    // If we got a fiber, try to find source info
     if (fiber) {
-      // First try: find component with _debugSource (full source info)
       const fiberCodeInfo = findNearestUserComponentWithSource(fiber);
       if (fiberCodeInfo) {
         return {
@@ -105,7 +75,6 @@ export async function detectComponent(
         };
       }
 
-      // Second try: find any user component (just name, no source location)
       const componentInfo = findNearestUserComponent(fiber);
       if (componentInfo) {
         return {
@@ -121,7 +90,6 @@ export async function detectComponent(
       }
     }
 
-    // Complete fallback - no fiber or no component found
     return {
       success: true,
       codeInfo: {
@@ -143,17 +111,20 @@ export async function detectComponent(
   }
 }
 
-/**
- * Detect component using coordinates and view ref
- * Uses React Native's built-in getInspectorDataForViewAtPoint API
- *
- * Strategy:
- * 1. Use inspector API to get component hierarchy and frame
- * 2. Check hierarchy items for source info (React 18 style)
- * 3. If no source, use getInspectorData() to get props and check for __callerSource (React 19 + Babel plugin)
- * 4. Extract additional context: parentComponents, accessibility, testID, textContent
- * 5. Fall back to component name only if no source found
- */
+interface InspectorProps {
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  accessibilityRole?: string;
+  testID?: string;
+  style?: Record<string, unknown> | Array<Record<string, unknown> | null | undefined>;
+  children?: unknown;
+  __callerSource?: {
+    fileName?: string;
+    lineNumber?: number;
+    columnNumber?: number;
+  };
+}
+
 export async function detectComponentAtPoint(
   viewRef: unknown,
   x: number,
@@ -169,7 +140,6 @@ export async function detectComponentAtPoint(
   }
 
   try {
-    // Use the built-in inspector API
     const inspectorData = await getInspectorDataForViewAtPoint(viewRef, x, y);
 
     if (inspectorData && inspectorData.hierarchy && inspectorData.hierarchy.length > 0) {
@@ -180,30 +150,21 @@ export async function detectComponentAtPoint(
         height: inspectorData.frame.height,
       } : null;
 
-      // Extract parent components from hierarchy (skip native components like RCTView)
       const allComponents = inspectorData.hierarchy
         .map(item => item.name)
         .filter(name => name && !name.startsWith('RCT') && name !== 'View');
 
-      const parentComponents = allComponents.slice(0, -1); // All except last (self)
-
-      // Build fullPath from hierarchy (web parity)
+      const parentComponents = allComponents.slice(0, -1);
       const fullPath = allComponents.join(' > ');
-
-      // Get nearbyElements (siblings at same level - approximated from hierarchy)
-      // In RN we can't easily get siblings, so we use the last 3 items from hierarchy
       const nearbyElements = allComponents.slice(-3).join(', ');
 
-      // Import findNodeHandle for getInspectorData calls
       const { findNodeHandle } = require('react-native');
 
-      // Variables to collect additional context
       let accessibility: string | undefined;
       let testID: string | undefined;
       let textContent: string | undefined;
-      let isFixed = false; // Track if component has fixed/absolute positioning
+      let isFixed = false;
 
-      // Strategy 1: Check hierarchy items for source info (React 18 style, _debugSource)
       for (const item of inspectorData.hierarchy) {
         if (item.source) {
           debugLog(' Found source via hierarchy.source:', item.name);
@@ -220,7 +181,6 @@ export async function detectComponentAtPoint(
             accessibility,
             testID,
             textContent,
-            // Web parity fields
             fullPath,
             nearbyElements,
             isFixed,
@@ -228,8 +188,6 @@ export async function detectComponentAtPoint(
         }
       }
 
-      // Strategy 2: Use getInspectorData() to check props for __callerSource (React 19 + Babel plugin)
-      // Start from selectedIndex and work backwards to find user component
       const startIndex = inspectorData.selectedIndex ?? inspectorData.hierarchy.length - 1;
 
       for (let i = startIndex; i >= 0; i--) {
@@ -237,9 +195,8 @@ export async function detectComponentAtPoint(
         if (item.getInspectorData) {
           try {
             const data = item.getInspectorData(findNodeHandle);
-            const props = data?.props || {};
+            const props = (data?.props || {}) as InspectorProps;
 
-            // Capture accessibility info from any component that has it
             if (!accessibility && (props.accessibilityLabel || props.accessibilityHint || props.accessibilityRole)) {
               const parts: string[] = [];
               if (props.accessibilityRole) parts.push(`role="${props.accessibilityRole}"`);
@@ -248,12 +205,10 @@ export async function detectComponentAtPoint(
               accessibility = parts.join(', ');
             }
 
-            // Capture testID
             if (!testID && props.testID) {
               testID = props.testID;
             }
 
-            // Check for fixed/absolute positioning (web parity: isFixed)
             if (props.style) {
               const style = Array.isArray(props.style)
                 ? Object.assign({}, ...props.style.filter(Boolean))
@@ -263,21 +218,18 @@ export async function detectComponentAtPoint(
               }
             }
 
-            // Capture text content from Text components
             if (!textContent && item.name === 'Text' && props.children) {
               const text = typeof props.children === 'string' ? props.children :
                           Array.isArray(props.children) ? props.children.filter(c => typeof c === 'string').join('') : '';
               if (text) {
-                textContent = text.slice(0, 100); // Limit length
+                textContent = text.slice(0, 100);
               }
             }
 
-            // Check for __callerSource
             if (props.__callerSource) {
               const callerSource = props.__callerSource;
               const fileName = callerSource.fileName || '';
 
-              // Skip library components (paths containing 'Agentation' or 'node_modules')
               if (fileName.includes('Agentation') || fileName.includes('node_modules')) {
                 debugLog(' Skipping library component:', item.name, fileName);
                 continue;
@@ -297,19 +249,17 @@ export async function detectComponentAtPoint(
                 accessibility,
                 testID,
                 textContent,
-                // Web parity fields
                 fullPath,
                 nearbyElements,
                 isFixed,
               };
             }
           } catch (e) {
-            // getInspectorData might fail for some items, continue to next
+            // getInspectorData might fail for some items
           }
         }
       }
 
-      // Strategy 3: No source info found, return component name from selected item
       const selectedItem = inspectorData.hierarchy[inspectorData.selectedIndex] ||
                           inspectorData.hierarchy[0];
       debugLog(' No source found, using component name:', selectedItem?.name);
@@ -326,14 +276,12 @@ export async function detectComponentAtPoint(
         accessibility,
         testID,
         textContent,
-        // Web parity fields
         fullPath,
         nearbyElements,
         isFixed,
       };
     }
 
-    // Fallback to old method
     return detectComponent(viewRef);
   } catch (error) {
     debugError('detectComponentAtPoint error:', error);
@@ -341,20 +289,10 @@ export async function detectComponentAtPoint(
   }
 }
 
-/**
- * Format element path for display and export
- * @param codeInfo - Code information from detection
- * @returns Formatted path like "src/components/Button.tsx:42"
- */
 export function formatElementPath(codeInfo: CodeInfo): string {
   return `${codeInfo.relativePath}:${codeInfo.lineNumber}`;
 }
 
-/**
- * Format element path with column number
- * @param codeInfo - Code information from detection
- * @returns Formatted path like "src/components/Button.tsx:42:15"
- */
 export function formatElementPathWithColumn(codeInfo: CodeInfo): string {
   if (codeInfo.columnNumber !== undefined) {
     return `${codeInfo.relativePath}:${codeInfo.lineNumber}:${codeInfo.columnNumber}`;
@@ -362,28 +300,14 @@ export function formatElementPathWithColumn(codeInfo: CodeInfo): string {
   return formatElementPath(codeInfo);
 }
 
-/**
- * Get component type name for display
- * @param codeInfo - Code information from detection
- * @returns Component name or 'Unknown'
- */
 export function getComponentType(codeInfo: CodeInfo): string {
   return codeInfo.componentName || 'Unknown';
 }
 
-/**
- * Check if component detection is available in current environment
- * @returns true if detection will work, false otherwise
- */
 export function isComponentDetectionAvailable(): boolean {
   return checkAvailability();
 }
 
-/**
- * Get user-friendly error message
- * @param error - Error string from detection
- * @returns Formatted error message
- */
 export function getDetectionErrorMessage(error: string): string {
   if (error.includes('development mode')) {
     return 'Component detection only works in development builds. Make sure __DEV__ is true.';

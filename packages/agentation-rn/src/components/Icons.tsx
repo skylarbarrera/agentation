@@ -1,40 +1,25 @@
-/**
- * Icons for Agentation Toolbar
- * SVG icons adapted from web Agentation
- * Falls back to emoji if react-native-svg not available
- */
-
-import React from 'react';
 import { Text, View, StyleSheet } from 'react-native';
 
-// Try to import react-native-svg, fallback to emoji if not available
+/* eslint-disable @typescript-eslint/no-explicit-any */
 let Svg: any;
 let Path: any;
 let Circle: any;
-let G: any;
-let ClipPath: any;
-let Defs: any;
-let Rect: any;
 
 try {
   const svg = require('react-native-svg');
   Svg = svg.Svg;
   Path = svg.Path;
   Circle = svg.Circle;
-  G = svg.G;
-  ClipPath = svg.ClipPath;
-  Defs = svg.Defs;
-  Rect = svg.Rect;
 } catch {
-  // react-native-svg not available, will use emoji fallback
+  // react-native-svg not available
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 interface IconProps {
   size?: number;
   color?: string;
 }
 
-// Fallback component when SVG not available
 function EmojiIcon({ emoji, size = 24 }: { emoji: string; size?: number }) {
   return (
     <View style={[styles.emojiContainer, { width: size, height: size }]}>
@@ -43,9 +28,6 @@ function EmojiIcon({ emoji, size = 24 }: { emoji: string; size?: number }) {
   );
 }
 
-/**
- * List with sparkle - Agentation logo icon
- */
 export function IconListSparkle({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="✨" size={size} />;
 
@@ -82,9 +64,6 @@ export function IconListSparkle({ size = 24, color = 'currentColor' }: IconProps
   );
 }
 
-/**
- * Play icon (triangle)
- */
 export function IconPlay({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="▶️" size={size} />;
 
@@ -99,9 +78,6 @@ export function IconPlay({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
-/**
- * Pause icon (two bars)
- */
 export function IconPause({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="⏸️" size={size} />;
 
@@ -123,9 +99,6 @@ export function IconPause({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
-/**
- * Copy icon
- */
 export function IconCopy({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="📋" size={size} />;
 
@@ -146,9 +119,6 @@ export function IconCopy({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
-/**
- * Trash icon
- */
 export function IconTrash({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="🗑️" size={size} />;
 
@@ -191,9 +161,6 @@ export function IconTrash({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
-/**
- * Gear/Settings icon
- */
 export function IconGear({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="⚙️" size={size} />;
 
@@ -211,9 +178,6 @@ export function IconGear({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
-/**
- * Checkmark icon
- */
 export function IconCheck({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="✓" size={size} />;
 
@@ -230,9 +194,6 @@ export function IconCheck({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
-/**
- * Close/X icon
- */
 export function IconClose({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="✕" size={size} />;
 
@@ -250,6 +211,39 @@ export function IconClose({ size = 24, color = 'currentColor' }: IconProps) {
         stroke={color}
         strokeWidth={1.5}
         strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function IconSun({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="☀️" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={3.25} stroke={color} strokeWidth={1.5} />
+      <Path d="M12 4.75V5.25" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M12 18.75V19.25" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M17.25 6.75L16.9 7.1" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M7.1 16.9L6.75 17.25" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M19.25 12H18.75" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M5.25 12H4.75" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M17.25 17.25L16.9 16.9" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M7.1 7.1L6.75 6.75" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function IconMoon({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="🌙" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M17.715 15.15A6.5 6.5 0 0 1 9 6.035c-2.894.887-5 3.61-5 6.832 0 3.94 3.153 7.136 7.042 7.136 3.101 0 5.734-2.032 6.673-4.853Z"
+        stroke={color}
+        strokeWidth={1.5}
         strokeLinejoin="round"
       />
     </Svg>

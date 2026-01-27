@@ -2280,6 +2280,13 @@ export function PageFeedbackToolbarCSS({
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs
+      const target = e.target as HTMLElement;
+      const isTyping =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
       if (e.key === "Escape") {
         if (pendingAnnotation) {
           // Let popup handle
@@ -2287,11 +2294,38 @@ export function PageFeedbackToolbarCSS({
           setIsActive(false);
         }
       }
+
+      // "S" to send annotations
+      if (
+        (e.key === "s" || e.key === "S") &&
+        !isTyping &&
+        !e.metaKey &&
+        !e.ctrlKey
+      ) {
+        const hasValidWebhook =
+          isValidUrl(settings.webhookUrl) || isValidUrl(webhookUrl || "");
+        if (
+          annotations.length > 0 &&
+          hasValidWebhook &&
+          sendState === "idle"
+        ) {
+          e.preventDefault();
+          sendToWebhook();
+        }
+      }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isActive, pendingAnnotation]);
+  }, [
+    isActive,
+    pendingAnnotation,
+    annotations.length,
+    settings.webhookUrl,
+    webhookUrl,
+    sendState,
+    sendToWebhook,
+  ]);
 
   if (!mounted) return null;
 
@@ -2509,6 +2543,7 @@ export function PageFeedbackToolbarCSS({
                 {hasAnnotations && sendState === "idle" && (
                   <span
                     className={`${styles.buttonBadge} ${!isDarkMode ? styles.light : ""}`}
+                    style={{ backgroundColor: settings.annotationColor }}
                   >
                     {annotations.length}
                   </span>
@@ -2521,7 +2556,7 @@ export function PageFeedbackToolbarCSS({
                   ? "Sent!"
                   : sendState === "failed"
                     ? "Failed"
-                    : "Send to webhook"}
+                    : "Send Annotations"}
               </span>
             </div>
 
@@ -2871,9 +2906,11 @@ export function PageFeedbackToolbarCSS({
                       className={`${styles.automationHeader} ${!isDarkMode ? styles.light : ""}`}
                     >
                       MCP Connection
-                      <span className={styles.helpIcon}>
-                        <IconHelp size={20} />
-                      </span>
+                      <Tooltip content="Connect via Model Context Protocol to let AI agents like Claude Code receive annotations in real-time.">
+                        <span className={styles.helpIcon}>
+                          <IconHelp size={20} />
+                        </span>
+                      </Tooltip>
                     </span>
                     {endpoint ? (
                       <div
@@ -2901,8 +2938,16 @@ export function PageFeedbackToolbarCSS({
                     className={`${styles.automationDescription} ${!isDarkMode ? styles.light : ""}`}
                     style={{ paddingBottom: 6 }}
                   >
-                    An active MCP connection allows agents to receive and act on
-                    annotations.
+                    MCP connection allows agents to receive and act on
+                    annotations.{" "}
+                    <a
+                      href="https://agentation.dev/mcp"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`${styles.learnMoreLink} ${!isDarkMode ? styles.light : ""}`}
+                    >
+                      Learn more
+                    </a>
                   </p>
                 </div>
 
@@ -2915,9 +2960,11 @@ export function PageFeedbackToolbarCSS({
                       className={`${styles.automationHeader} ${!isDarkMode ? styles.light : ""}`}
                     >
                       Webhooks
-                      <span className={styles.helpIcon}>
-                        <IconHelp size={20} />
-                      </span>
+                      <Tooltip content="Send annotation data to any URL endpoint when annotations change. Useful for custom integrations.">
+                        <span className={styles.helpIcon}>
+                          <IconHelp size={20} />
+                        </span>
+                      </Tooltip>
                     </span>
                     <div className={styles.autoSendRow}>
                       <span

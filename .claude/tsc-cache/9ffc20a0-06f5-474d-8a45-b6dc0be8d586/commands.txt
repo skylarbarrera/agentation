@@ -1,0 +1,4 @@
+packages/agentation-reanimated-pause-state:build:cd /Users/skillet/dev/ai/agentation-mobile/packages/agentation-reanimated-pause-state && npm run build
+packages/agentation-reanimated-pause-state:tsc:cd /Users/skillet/dev/ai/agentation-mobile/packages/agentation-reanimated-pause-state && npx tsc --noEmit
+packages/agentation-rn:build:cd /Users/skillet/dev/ai/agentation-mobile/packages/agentation-rn && npm run build
+packages/agentation-rn:tsc:cd /Users/skillet/dev/ai/agentation-mobile/packages/agentation-rn && npx tsc --noEmit

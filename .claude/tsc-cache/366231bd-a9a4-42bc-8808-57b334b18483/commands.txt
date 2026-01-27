@@ -1,0 +1,2 @@
+packages/reanimated-pause-plugin:build:cd /Users/skillet/dev/ai/agentation-mobile/packages/reanimated-pause-plugin && npm run build
+packages/reanimated-pause-plugin:tsc:cd /Users/skillet/dev/ai/agentation-mobile/packages/reanimated-pause-plugin && npx tsc --noEmit

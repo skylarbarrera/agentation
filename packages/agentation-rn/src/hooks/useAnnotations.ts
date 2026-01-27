@@ -1,139 +1,51 @@
-/**
- * useAnnotations Hook
- * Manages annotation state, storage, and operations
- */
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Platform, Dimensions, PixelRatio } from 'react-native';
 import { debugError } from '../utils/debug';
 import type { Annotation, OutputDetailLevel } from '../types';
-import { saveAnnotations, loadAnnotations } from '../utils/storage';
 import { generateId, getTimestamp, copyToClipboard } from '../utils/helpers';
 import { detectComponentAtPoint, formatElementPath, getComponentType } from '../utils/componentDetection';
 import { generateMarkdown } from '../utils/markdownGeneration';
 import { getNavigationInfo, NavigationResolver } from '../utils/navigationDetection';
 
 export interface UseAnnotationsOptions {
-  /** Screen name for storage key */
-  screenName: string;
-
-  /** Initial annotations (demo mode) */
   initialAnnotations?: Annotation[];
-
-  /** Callback when annotation created */
-  onAnnotationCreated?: (annotation: Annotation) => void;
-
-  /** Callback when annotation updated */
-  onAnnotationUpdated?: (annotation: Annotation) => void;
-
-  /**
-   * Callback when annotation deleted
-   * Web parity: receives full annotation object
-   * Legacy: receives just the ID (deprecated)
-   */
-  onAnnotationDeleted?: ((annotation: Annotation) => void) | ((annotationId: string) => void);
-
-  /** Callback when markdown copied */
-  onMarkdownCopied?: (markdown: string) => void;
-
-  /**
-   * Whether to copy to clipboard when copy button is clicked
-   * Web parity: default true
-   */
+  onAnnotationAdd?: (annotation: Annotation) => void;
+  onAnnotationUpdate?: (annotation: Annotation) => void;
+  onAnnotationDelete?: (annotation: Annotation) => void;
+  onCopy?: (markdown: string) => void;
   copyToClipboard?: boolean;
-
-  /**
-   * Custom navigation resolver for route detection
-   * Use this to integrate with navigation libraries other than React Navigation
-   */
   navigationResolver?: NavigationResolver;
 }
 
 export interface UseAnnotationsReturn {
-  /** Current annotations */
   annotations: Annotation[];
-
-  /** Whether annotations are loading from storage */
-  loading: boolean;
-
-  /** Create new annotation from tap */
   createAnnotation: (
     x: number,
     y: number,
     viewInstance: unknown,
     comment: string
   ) => Promise<Annotation | null>;
-
-  /** Update existing annotation */
   updateAnnotation: (id: string, comment: string) => void;
-
-  /** Delete annotation */
   deleteAnnotation: (id: string) => void;
-
-  /** Clear all annotations */
   clearAll: () => void;
-
-  /** Generate and copy markdown */
   copyMarkdown: (outputDetail?: OutputDetailLevel) => Promise<void>;
-
-  /** Get annotation by ID */
   getAnnotation: (id: string) => Annotation | undefined;
 }
 
-/**
- * Hook for managing annotations
- */
 export function useAnnotations(
   options: UseAnnotationsOptions
 ): UseAnnotationsReturn {
   const {
-    screenName,
     initialAnnotations = [],
-    onAnnotationCreated,
-    onAnnotationUpdated,
-    onAnnotationDeleted,
-    onMarkdownCopied,
+    onAnnotationAdd,
+    onAnnotationUpdate,
+    onAnnotationDelete,
+    onCopy,
     copyToClipboard: shouldCopyToClipboard = true,
     navigationResolver,
   } = options;
 
   const [annotations, setAnnotations] = useState<Annotation[]>(initialAnnotations);
-  const [loading, setLoading] = useState(true);
-
-  // Load annotations from storage on mount
-  useEffect(() => {
-    loadAnnotationsFromStorage();
-  }, [screenName]);
-
-  // Save annotations when they change
-  useEffect(() => {
-    if (!loading) {
-      saveAnnotationsToStorage();
-    }
-  }, [annotations, loading]);
-
-  const loadAnnotationsFromStorage = async () => {
-    try {
-      setLoading(true);
-      const loaded = await loadAnnotations(screenName);
-
-      if (loaded.length > 0) {
-        setAnnotations(loaded);
-      }
-    } catch (error) {
-      debugError('Failed to load annotations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveAnnotationsToStorage = async () => {
-    try {
-      await saveAnnotations(screenName, annotations);
-    } catch (error) {
-      debugError('Failed to save annotations:', error);
-    }
-  };
 
   const createAnnotation = useCallback(
     async (
@@ -143,7 +55,6 @@ export function useAnnotations(
       comment: string
     ): Promise<Annotation | null> => {
       try {
-        // Detect component using coordinates and view ref
         const detection = await detectComponentAtPoint(viewInstance, x, y);
 
         if (!detection.success || !detection.codeInfo) {
@@ -158,17 +69,14 @@ export function useAnnotations(
           accessibility,
           testID,
           textContent,
-          // Web parity fields
           fullPath,
           nearbyElements,
           isFixed,
         } = detection;
 
-        // Get device/environment context
         const screenDims = Dimensions.get('window');
         const navInfo = getNavigationInfo(navigationResolver);
 
-        // Create annotation with all available data
         const annotation: Annotation = {
           id: generateId(),
           x,
@@ -177,31 +85,21 @@ export function useAnnotations(
           element: codeInfo.componentName || 'Unknown',
           elementPath: formatElementPath(codeInfo),
           timestamp: getTimestamp(),
-
-          // Component info
           componentType: getComponentType(codeInfo),
           sourcePath: codeInfo.relativePath,
           lineNumber: codeInfo.lineNumber,
           columnNumber: codeInfo.columnNumber,
           boundingBox: bounds || undefined,
-
-          // Context from hierarchy
           parentComponents,
           accessibility,
           testID,
-          nearbyText: textContent, // Map textContent to nearbyText for compatibility
-
-          // Web parity fields
+          nearbyText: textContent,
           fullPath,
           nearbyElements,
           isFixed,
-
-          // Navigation context (RN equivalent of URL)
           routeName: navInfo?.routeName,
           routeParams: navInfo?.routeParams,
           navigationPath: navInfo?.navigationPath,
-
-          // Device context
           platform: Platform.OS as 'ios' | 'android' | 'web',
           screenDimensions: {
             width: screenDims.width,
@@ -210,11 +108,8 @@ export function useAnnotations(
           pixelRatio: PixelRatio.get(),
         };
 
-        // Add to state
         setAnnotations(prev => [...prev, annotation]);
-
-        // Callback
-        onAnnotationCreated?.(annotation);
+        onAnnotationAdd?.(annotation);
 
         return annotation;
       } catch (error) {
@@ -222,42 +117,30 @@ export function useAnnotations(
         return null;
       }
     },
-    [onAnnotationCreated]
+    [navigationResolver, onAnnotationAdd]
   );
 
   const updateAnnotation = useCallback(
     (id: string, comment: string) => {
-      setAnnotations(prev =>
-        prev.map(ann =>
-          ann.id === id
-            ? { ...ann, comment, timestamp: getTimestamp() }
-            : ann
-        )
-      );
+      const existing = annotations.find(a => a.id === id);
+      if (!existing) return;
 
-      const updated = annotations.find(a => a.id === id);
-      if (updated) {
-        onAnnotationUpdated?.({ ...updated, comment });
-      }
+      const updated = { ...existing, comment, timestamp: getTimestamp() };
+      setAnnotations(prev => prev.map(ann => ann.id === id ? updated : ann));
+      onAnnotationUpdate?.(updated);
     },
-    [annotations, onAnnotationUpdated]
+    [annotations, onAnnotationUpdate]
   );
 
   const deleteAnnotation = useCallback(
     (id: string) => {
-      // Find annotation before deleting (for callback)
       const annotation = annotations.find(a => a.id === id);
+      if (!annotation) return;
 
       setAnnotations(prev => prev.filter(ann => ann.id !== id));
-
-      // Call callback with annotation if found, otherwise ID
-      if (onAnnotationDeleted && annotation) {
-        // Try to call with full annotation (web API)
-        // If callback expects string, TypeScript will handle it
-        (onAnnotationDeleted as (annotation: Annotation) => void)(annotation);
-      }
+      onAnnotationDelete?.(annotation);
     },
-    [onAnnotationDeleted, annotations]
+    [annotations, onAnnotationDelete]
   );
 
   const clearAll = useCallback(() => {
@@ -266,20 +149,18 @@ export function useAnnotations(
 
   const copyMarkdownFn = useCallback(async (outputDetail?: OutputDetailLevel) => {
     try {
-      const output = generateMarkdown(annotations, screenName, outputDetail);
+      const output = generateMarkdown(annotations, outputDetail);
 
-      // Only copy to clipboard if enabled (web parity)
       if (shouldCopyToClipboard) {
         await copyToClipboard(output.content);
       }
 
-      // Always call callback with markdown content
-      onMarkdownCopied?.(output.content);
+      onCopy?.(output.content);
     } catch (error) {
       debugError('Failed to copy markdown:', error);
       throw error;
     }
-  }, [annotations, screenName, onMarkdownCopied, shouldCopyToClipboard]);
+  }, [annotations, onCopy, shouldCopyToClipboard]);
 
   const getAnnotation = useCallback(
     (id: string) => {
@@ -290,7 +171,6 @@ export function useAnnotations(
 
   return {
     annotations,
-    loading,
     createAnnotation,
     updateAnnotation,
     deleteAnnotation,

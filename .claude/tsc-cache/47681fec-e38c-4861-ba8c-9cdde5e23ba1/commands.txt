@@ -1,0 +1,4 @@
+packages/agentation-rn-mcp:build:cd /Users/skillet/dev/ai/agentation-mobile/packages/agentation-rn-mcp && npm run build
+packages/agentation-rn-mcp:tsc:cd /Users/skillet/dev/ai/agentation-mobile/packages/agentation-rn-mcp && npx tsc --noEmit
+packages/agentation-rn:build:cd /Users/skillet/dev/ai/agentation-mobile/packages/agentation-rn && npm run build
+packages/agentation-rn:tsc:cd /Users/skillet/dev/ai/agentation-mobile/packages/agentation-rn && npx tsc --noEmit

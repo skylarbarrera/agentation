@@ -1,68 +1,30 @@
-/**
- * AgenationView Component
- * Drop-in annotation layer for any context (modals, sheets, nested views)
- *
- * Usage:
- * ```tsx
- * import { AgenationView } from 'agentation-rn';
- *
- * <Modal>
- *   <AgenationView>
- *     <ModalContent />
- *   </AgenationView>
- * </Modal>
- * ```
- *
- * Features:
- * - Self-contained annotation layer
- * - Gracefully no-ops in production
- * - Works independently of main Agentation wrapper
- */
-
 import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   GestureResponderEvent,
 } from 'react-native';
-import { debugLog } from '../utils/debug';
+import { debugLog, debugError } from '../utils/debug';
 import { detectComponentAtPoint } from '../utils/componentDetection';
 import type { Annotation, ComponentDetection } from '../types';
 import { AnnotationMarker } from './AnnotationMarker';
 import { AnnotationPopup } from './AnnotationPopup';
 import { Toolbar } from './Toolbar';
-import { copyToClipboard } from '../utils/helpers';
+import { copyToClipboard, formatDetectedElement } from '../utils/helpers';
 
 export interface AgenationViewProps {
-  /** Content to wrap */
   children: React.ReactNode;
-  /** Whether annotation mode is enabled (default: true in __DEV__) */
   enabled?: boolean;
-  /** Callback when annotation is created */
-  onAnnotationCreated?: (annotation: Partial<Annotation>) => void;
-  /** Style for the container */
-  style?: any;
-}
-
-/**
- * Format detected component info for display
- */
-function formatDetectedElement(codeInfo: { relativePath?: string; lineNumber?: number; componentName?: string } | null): string | undefined {
-  if (!codeInfo) return undefined;
-  const filename = codeInfo.relativePath?.split('/').pop();
-  if (filename) {
-    return codeInfo.lineNumber ? `${filename}:${codeInfo.lineNumber}` : filename;
-  }
-  return codeInfo.componentName;
+  onAnnotationAdd?: (annotation: Partial<Annotation>) => void;
+  style?: React.ComponentProps<typeof View>['style'];
 }
 
 export function AgenationView({
   children,
   enabled = true,
-  onAnnotationCreated,
+  onAnnotationAdd,
   style,
 }: AgenationViewProps) {
-  // No-op in production
   if (!__DEV__ || !enabled) {
     return <View style={style}>{children}</View>;
   }
@@ -72,12 +34,11 @@ export function AgenationView({
   const [pendingTap, setPendingTap] = useState<{ x: number; y: number } | null>(null);
   const [pendingDetection, setPendingDetection] = useState<ComponentDetection | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [isAnnotationMode, setIsAnnotationMode] = useState(true);
+  const [isActive, setIsActive] = useState(true);
   const contentRef = useRef<View>(null);
 
-  // Toolbar handlers
   const handleToggleMode = useCallback(() => {
-    setIsAnnotationMode(prev => !prev);
+    setIsActive(prev => !prev);
   }, []);
 
   const handleCopyMarkdown = useCallback(async () => {
@@ -113,12 +74,11 @@ export function AgenationView({
       setPendingDetection(null);
       setPopupVisible(true);
 
-      // Detect component
       detectComponentAtPoint(contentRef.current, locationX, locationY)
         .then(detection => {
           setPendingDetection(detection);
         })
-        .catch(() => {});
+        .catch((e) => debugError('Detection failed:', e));
 
       return true;
     },
@@ -134,12 +94,10 @@ export function AgenationView({
 
   const handlePopupSave = useCallback((comment: string) => {
     if (selectedIndex !== null) {
-      // Update existing
       setAnnotations(prev => prev.map((ann, i) =>
         i === selectedIndex ? { ...ann, comment } : ann
       ));
     } else if (pendingTap && pendingDetection?.codeInfo) {
-      // Create new
       const newAnnotation: Partial<Annotation> = {
         x: pendingTap.x,
         y: pendingTap.y,
@@ -149,14 +107,14 @@ export function AgenationView({
         timestamp: Date.now(),
       };
       setAnnotations(prev => [...prev, newAnnotation]);
-      onAnnotationCreated?.(newAnnotation);
+      onAnnotationAdd?.(newAnnotation);
     }
 
     setPopupVisible(false);
     setPendingTap(null);
     setPendingDetection(null);
     setSelectedIndex(null);
-  }, [selectedIndex, pendingTap, pendingDetection, onAnnotationCreated]);
+  }, [selectedIndex, pendingTap, pendingDetection, onAnnotationAdd]);
 
   const handlePopupCancel = useCallback(() => {
     setPopupVisible(false);
@@ -176,18 +134,15 @@ export function AgenationView({
 
   return (
     <View style={[styles.container, style]} ref={contentRef} collapsable={false}>
-      {/* Content */}
       {children}
 
-      {/* Touch overlay (only when annotation mode enabled and popup closed) */}
-      {isAnnotationMode && !popupVisible && (
+      {isActive && !popupVisible && (
         <View
           style={styles.overlay}
           onStartShouldSetResponder={handleOverlayTouch}
         />
       )}
 
-      {/* Annotation markers */}
       {annotations.map((ann, index) => (
         <AnnotationMarker
           key={index}
@@ -198,7 +153,6 @@ export function AgenationView({
         />
       ))}
 
-      {/* Annotation popup */}
       <AnnotationPopup
         annotation={selectedIndex !== null ? annotations[selectedIndex] as Annotation : null}
         position={pendingTap || { x: 0, y: 0 }}
@@ -209,9 +163,8 @@ export function AgenationView({
         detectedElement={formatDetectedElement(pendingDetection?.codeInfo || null)}
       />
 
-      {/* Toolbar */}
       <Toolbar
-        isAnnotationMode={isAnnotationMode}
+        isActive={isActive}
         annotationCount={annotations.length}
         onToggleMode={handleToggleMode}
         onCopyMarkdown={handleCopyMarkdown}

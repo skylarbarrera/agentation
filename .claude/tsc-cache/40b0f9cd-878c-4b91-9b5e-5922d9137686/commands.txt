@@ -1,0 +1,3 @@
+packages/agentation-native:build:cd /Users/skillet/dev/ai/agentation-mobile/packages/agentation-native && npm run build
+packages/agentation-native:tsc:cd /Users/skillet/dev/ai/agentation-mobile/packages/agentation-native && npx tsc --noEmit
+packages/example:tsc:cd /Users/skillet/dev/ai/agentation-mobile/packages/example && npx tsc --noEmit

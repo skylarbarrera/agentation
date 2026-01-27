@@ -1,0 +1,3 @@
+packages/agentation-rn
+packages/agentation-rn-mcp
+root

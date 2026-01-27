@@ -162,6 +162,232 @@ function App() {
             code={`import type { Annotation, AgentationProps } from "agentation";`}
           />
         </section>
+
+        <section>
+          <h2 id="http-api">HTTP API</h2>
+          <p>
+            The <code>agentation-mcp</code> server provides a REST API for programmatic access:
+          </p>
+
+          <h3 style={{ marginTop: "1.25rem" }}>Sessions</h3>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.75rem" }}>
+            <tbody>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem", width: "5rem", color: "rgba(0,0,0,0.4)" }}>POST</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>/sessions</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Create a new session</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem", color: "rgba(0,0,0,0.4)" }}>GET</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>/sessions</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>List all sessions</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem", color: "rgba(0,0,0,0.4)" }}>GET</td>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem" }}>/sessions/:id</td>
+                <td style={{ padding: "0.375rem 0", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Get session with annotations</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 style={{ marginTop: "1.25rem" }}>Annotations</h3>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.75rem" }}>
+            <tbody>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem", width: "5rem", color: "rgba(0,0,0,0.4)" }}>POST</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>/sessions/:id/annotations</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Add annotation</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem", color: "rgba(0,0,0,0.4)" }}>GET</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>/annotations/:id</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Get annotation</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem", color: "rgba(0,0,0,0.4)" }}>PATCH</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>/annotations/:id</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Update annotation</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem", color: "rgba(0,0,0,0.4)" }}>DELETE</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>/annotations/:id</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Delete annotation</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem", color: "rgba(0,0,0,0.4)" }}>GET</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>/sessions/:id/pending</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Get pending annotations</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem", color: "rgba(0,0,0,0.4)" }}>GET</td>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem" }}>/pending</td>
+                <td style={{ padding: "0.375rem 0", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Get all pending annotations</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 style={{ marginTop: "1.25rem" }}>Actions</h3>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.75rem" }}>
+            <tbody>
+              <tr>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem", width: "5rem", color: "rgba(0,0,0,0.4)" }}>POST</td>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem" }}>/sessions/:id/action</td>
+                <td style={{ padding: "0.375rem 0", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Request agent action</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 style={{ marginTop: "1.25rem" }}>Events (SSE)</h3>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.75rem" }}>
+            <tbody>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem", width: "5rem", color: "rgba(0,0,0,0.4)" }}>GET</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>/sessions/:id/events</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Session event stream</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem", color: "rgba(0,0,0,0.4)" }}>GET</td>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem" }}>/events?domain=...</td>
+                <td style={{ padding: "0.375rem 0", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Domain-wide event stream</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 style={{ marginTop: "1.25rem" }}>Health</h3>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.75rem" }}>
+            <tbody>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem", width: "5rem", color: "rgba(0,0,0,0.4)" }}>GET</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>/health</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Health check</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem", color: "rgba(0,0,0,0.4)" }}>GET</td>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem" }}>/status</td>
+                <td style={{ padding: "0.375rem 0", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Server status</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2 id="real-time-events">Real-Time Events</h2>
+          <p>
+            Subscribe to real-time events via Server-Sent Events:
+          </p>
+          <CodeBlock
+            language="bash"
+            code={`# Session-level: events for a single page
+curl -N http://localhost:4747/sessions/:id/events
+
+# Site-level: events across ALL pages for a domain
+curl -N "http://localhost:4747/events?domain=localhost:3001"
+
+# Reconnect after disconnect (replay missed events)
+curl -N -H "Last-Event-ID: 42" http://localhost:4747/sessions/:id/events`}
+          />
+          <p style={{ marginTop: "0.75rem", fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)" }}>
+            <strong>Event types:</strong>
+          </p>
+          <ul style={{ fontSize: "0.8125rem", color: "rgba(0,0,0,0.65)", marginTop: "0.25rem" }}>
+            <li><code>annotation.created</code> &mdash; New annotation added</li>
+            <li><code>annotation.updated</code> &mdash; Annotation modified (comment, status, etc.)</li>
+            <li><code>annotation.deleted</code> &mdash; Annotation removed</li>
+            <li><code>session.created</code> &mdash; New session started</li>
+            <li><code>session.updated</code> &mdash; Session updated</li>
+            <li><code>session.closed</code> &mdash; Session closed</li>
+            <li><code>action.requested</code> &mdash; &ldquo;Send to Agent&rdquo; clicked</li>
+            <li><code>thread.message</code> &mdash; New message in annotation thread</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 id="webhooks">Webhooks</h2>
+          <p>
+            Configure webhooks to receive notifications when users request agent action:
+          </p>
+          <CodeBlock
+            language="bash"
+            code={`# Single webhook
+export AGENTATION_WEBHOOK_URL=https://your-server.com/webhook
+
+# Multiple webhooks (comma-separated)
+export AGENTATION_WEBHOOKS=https://server1.com/hook,https://server2.com/hook`}
+          />
+          <p style={{ marginTop: "0.75rem", fontSize: "0.8125rem" }}>
+            See <a href="/webhooks">Webhooks</a> for payload format and integration examples.
+          </p>
+        </section>
+
+        <section>
+          <h2 id="environment-variables">Environment Variables</h2>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.75rem", marginTop: "1rem" }}>
+            <thead>
+              <tr>
+                <th style={{ padding: "0.5rem 0", borderBottom: "1px solid rgba(0,0,0,0.1)", textAlign: "left", fontWeight: 500 }}>Variable</th>
+                <th style={{ padding: "0.5rem 0", borderBottom: "1px solid rgba(0,0,0,0.1)", textAlign: "left", fontWeight: 500 }}>Description</th>
+                <th style={{ padding: "0.5rem 0", borderBottom: "1px solid rgba(0,0,0,0.1)", textAlign: "left", fontWeight: 500 }}>Default</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>AGENTATION_STORE</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.6)" }}>Storage backend (<code>memory</code> or <code>sqlite</code>)</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>sqlite</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>AGENTATION_WEBHOOK_URL</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.6)" }}>Single webhook URL</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.4)" }}>-</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>AGENTATION_WEBHOOKS</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.6)" }}>Comma-separated webhook URLs</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.4)" }}>-</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>AGENTATION_EVENT_RETENTION_DAYS</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.6)" }}>Days to keep events</td>
+                <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", fontFamily: "monospace", fontSize: "0.6875rem" }}>7</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem" }}>AGENTATION_API_KEY</td>
+                <td style={{ padding: "0.375rem 0", color: "rgba(0,0,0,0.6)" }}>API key for cloud authentication</td>
+                <td style={{ padding: "0.375rem 0", color: "rgba(0,0,0,0.4)" }}>-</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2 id="storage">Storage</h2>
+          <p>
+            By default, data is persisted to SQLite at <code>~/.agentation/store.db</code>. To use
+            in-memory storage:
+          </p>
+          <CodeBlock
+            language="bash"
+            copyable
+            code={`AGENTATION_STORE=memory npx agentation-mcp server`}
+          />
+        </section>
+
+        <section>
+          <h2 id="programmatic-usage">Programmatic Usage</h2>
+          <CodeBlock
+            language="typescript"
+            code={`import { startHttpServer, startMcpServer } from 'agentation-mcp';
+
+// Start HTTP server on port 4747
+startHttpServer(4747);
+
+// Start MCP server (connects via stdio)
+await startMcpServer('http://localhost:4747');`}
+          />
+          <p style={{ marginTop: "0.75rem", fontSize: "0.8125rem" }}>
+            See <a href="/mcp">MCP Server</a> for AI agent integration and available tools.
+          </p>
+        </section>
       </article>
 
       <style>{`

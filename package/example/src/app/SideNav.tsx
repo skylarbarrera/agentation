@@ -425,7 +425,6 @@ export function SideNav() {
         { id: 'quick-start', text: 'Quick Start' },
         { id: 'cli-commands', text: 'CLI Commands' },
         { id: 'server-options', text: 'Server Options' },
-        { id: 'cloud-mode', text: 'Cloud Mode' },
         { id: 'claude-code', text: 'Claude Code' },
         { id: 'mcp-tools', text: 'MCP Tools' },
         { id: 'http-api', text: 'HTTP API' },

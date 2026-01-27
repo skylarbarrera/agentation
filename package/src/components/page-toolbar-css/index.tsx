@@ -59,7 +59,6 @@ import {
   saveSessionId,
   clearSessionId,
   saveAnnotationsWithSyncMarker,
-  getUnsyncedAnnotations,
 } from "../../utils/storage";
 import {
   createSession,
@@ -779,12 +778,19 @@ export function PageFeedbackToolbarCSS({
             saveSessionId(pathname, session.id);
             sessionEstablished = true;
 
-            // Only merge local annotations that haven't been synced to THIS session
-            const unsyncedLocal = getUnsyncedAnnotations(pathname, session.id);
+            // Find local annotations that need to be synced:
+            // 1. Annotations never synced to any session
+            // 2. Annotations synced to a different session
+            // 3. Annotations marked as synced to THIS session but missing from server
+            //    (handles server-side deletion)
+            const allLocalAnnotations = loadAnnotations<Annotation>(pathname);
             const serverIds = new Set(session.annotations.map((a) => a.id));
-            const localToMerge = unsyncedLocal.filter(
-              (a) => !serverIds.has(a.id),
-            );
+            const localToMerge = allLocalAnnotations.filter((a) => {
+              // If it exists on server, don't re-upload
+              if (serverIds.has(a.id)) return false;
+              // Otherwise, needs to be synced (whether never synced, synced elsewhere, or missing from server)
+              return true;
+            });
 
             // Sync unsynced local annotations to this session
             if (localToMerge.length > 0) {
@@ -2102,6 +2108,11 @@ export function PageFeedbackToolbarCSS({
     // Show result
     setSendState(success ? "sent" : "failed");
     setTimeout(() => setSendState("idle"), 2500);
+
+    // Clear annotations if send succeeded and autoClearAfterCopy is enabled
+    if (success && settings.autoClearAfterCopy) {
+      setTimeout(() => clearAll(), 500);
+    }
   }, [
     onSubmit,
     fireWebhook,
@@ -2109,13 +2120,15 @@ export function PageFeedbackToolbarCSS({
     pathname,
     settings.outputDetail,
     effectiveReactMode,
+    settings.autoClearAfterCopy,
+    clearAll,
   ]);
 
   // Toolbar dragging - mousemove and mouseup
   useEffect(() => {
     if (!dragStartPos) return;
 
-    const DRAG_THRESHOLD = 5; // pixels
+    const DRAG_THRESHOLD = 10; // pixels
 
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - dragStartPos.x;
@@ -2167,10 +2180,6 @@ export function PageFeedbackToolbarCSS({
       // If we were actually dragging, set flag to prevent click event
       if (isDraggingToolbar) {
         justFinishedToolbarDragRef.current = true;
-        // Clear flag after a short delay
-        setTimeout(() => {
-          justFinishedToolbarDragRef.current = false;
-        }, 50);
       }
       setIsDraggingToolbar(false);
       setDragStartPos(null);
@@ -2361,12 +2370,13 @@ export function PageFeedbackToolbarCSS({
       >
         {/* Morphing container */}
         <div
-          className={`${styles.toolbarContainer} ${!isDarkMode ? styles.light : ""} ${isActive ? styles.expanded : styles.collapsed} ${showEntranceAnimation ? styles.entrance : ""} ${isDraggingToolbar ? styles.dragging : ""} ${isValidUrl(settings.webhookUrl) || isValidUrl(webhookUrl || "") ? styles.serverConnected : ""}`}
+          className={`${styles.toolbarContainer} ${!isDarkMode ? styles.light : ""} ${isActive ? styles.expanded : styles.collapsed} ${showEntranceAnimation ? styles.entrance : ""} ${isDraggingToolbar ? styles.dragging : ""} ${!settings.webhooksEnabled && (isValidUrl(settings.webhookUrl) || isValidUrl(webhookUrl || "")) ? styles.serverConnected : ""}`}
           onClick={
             !isActive
               ? (e) => {
                   // Don't activate if we just finished dragging
                   if (justFinishedToolbarDragRef.current) {
+                    justFinishedToolbarDragRef.current = false;
                     e.preventDefault();
                     return;
                   }
@@ -2470,9 +2480,9 @@ export function PageFeedbackToolbarCSS({
               </span>
             </div>
 
-            {/* Send button - only enabled when webhook URL is available */}
+            {/* Send button - only visible when webhook URL is available AND auto-send is off */}
             <div
-              className={`${styles.buttonWrapper} ${styles.sendButtonWrapper} ${isValidUrl(settings.webhookUrl) || isValidUrl(webhookUrl || "") ? styles.sendButtonVisible : ""}`}
+              className={`${styles.buttonWrapper} ${styles.sendButtonWrapper} ${!settings.webhooksEnabled && (isValidUrl(settings.webhookUrl) || isValidUrl(webhookUrl || "")) ? styles.sendButtonVisible : ""}`}
             >
               <button
                 className={`${styles.controlButton} ${!isDarkMode ? styles.light : ""}`}

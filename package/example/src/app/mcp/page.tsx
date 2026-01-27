@@ -86,20 +86,7 @@ npx agentation-mcp help                    # Show help`}
             language="bash"
             code={`--port <port>      # HTTP server port (default: 4747)
 --mcp-only         # Skip HTTP server, only run MCP on stdio
---http-url <url>   # HTTP server URL for MCP to fetch from
---api-key <key>    # API key for cloud authentication`}
-          />
-        </section>
-
-        <section>
-          <h2 id="cloud-mode">Cloud Mode</h2>
-          <p>
-            Connect to the Agentation cloud backend instead of running a local HTTP server:
-          </p>
-          <CodeBlock
-            language="bash"
-            copyable
-            code={`npx agentation-mcp server --mcp-only --http-url https://agentation-mcp-cloud.vercel.app --api-key ag_xxx`}
+--http-url <url>   # HTTP server URL for MCP to fetch from`}
           />
         </section>
 

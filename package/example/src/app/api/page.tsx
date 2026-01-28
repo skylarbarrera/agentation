@@ -79,6 +79,34 @@ export default function APIPage() {
               </div>
               <p className="prop-desc">Set to false to prevent writing to clipboard (if handling via onCopy)</p>
             </div>
+            <div className="prop-item">
+              <div className="prop-header">
+                <code className="prop-name">endpoint</code>
+                <span className="prop-type">string</span>
+              </div>
+              <p className="prop-desc">MCP server URL for syncing annotations</p>
+            </div>
+            <div className="prop-item">
+              <div className="prop-header">
+                <code className="prop-name">sessionId</code>
+                <span className="prop-type">string</span>
+              </div>
+              <p className="prop-desc">Pre-existing session ID to use</p>
+            </div>
+            <div className="prop-item">
+              <div className="prop-header">
+                <code className="prop-name">onSessionCreated</code>
+                <span className="prop-type">(sessionId: string) =&gt; void</span>
+              </div>
+              <p className="prop-desc">Called when a new session is created</p>
+            </div>
+            <div className="prop-item">
+              <div className="prop-header">
+                <code className="prop-name">webhookUrl</code>
+                <span className="prop-type">string</span>
+              </div>
+              <p className="prop-desc">Webhook URL to receive annotation events</p>
+            </div>
           </div>
         </section>
 

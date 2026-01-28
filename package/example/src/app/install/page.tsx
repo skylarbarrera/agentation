@@ -290,7 +290,7 @@ function App() {
             annotations from the React component, and an MCP server that exposes
             tools for AI agents to read and act on feedback.
           </p>
-          <CodeBlock code="npx agentation server" language="bash" copyable />
+          <CodeBlock code="npx agentation-mcp server" language="bash" copyable />
           <p
             style={{
               fontSize: "0.875rem",
@@ -306,13 +306,12 @@ function App() {
             Add Agentation as an MCP server in your agent&apos;s config. Example for Claude Code:
           </p>
           <CodeBlock
-            code={`// Edit ~/.claude.json (Claude Code's global config)
-// Find or create: "projects" → "/absolute/path/to/your/project"
+            code={`// Edit ~/.claude/claude_code_config.json
 {
   "mcpServers": {
     "agentation": {
       "command": "npx",
-      "args": ["agentation", "server"]
+      "args": ["agentation-mcp", "server"]
     }
   }
 }`}
@@ -362,7 +361,7 @@ function App() {
 
           <p style={{ marginTop: "1.5rem" }}>
             <strong>Other agents:</strong> Any tool that supports MCP can connect.
-            Point your agent&apos;s MCP config to <code>npx agentation server</code> and
+            Point your agent&apos;s MCP config to <code>npx agentation-mcp server</code> and
             it will have access to annotation tools like <code>agentation_get_all_pending</code>,{" "}
             <code>agentation_list_sessions</code>, and <code>agentation_resolve</code>.
           </p>

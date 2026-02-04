@@ -36,7 +36,7 @@ const releases: Release[] = [
     changes: [
       { type: "added", text: <><a href="/mcp" className="styled-link">MCP server</a> for direct agent integration — agents can fetch, acknowledge, resolve, and dismiss annotations</> },
       { type: "added", text: "HTTP API and Server-Sent Events for real-time updates" },
-      { type: "added", text: <>Per-tab <a href="/mcp#sessions" className="styled-link">sessions</a> with rich annotation metadata (timestamps, status, resolver info)</> },
+      { type: "added", text: <>Per-page <a href="/mcp#sessions" className="styled-link">sessions</a> with rich annotation metadata (timestamps, status, resolver info)</> },
       { type: "added", text: "Status transitions: pending → acknowledged → resolved/dismissed, all timestamped" },
       { type: "added", text: <><a href="/schema" className="styled-link">Annotation Format Schema</a> with intent and severity fields for prioritization</> },
       { type: "added", text: "JSON Schema and TypeScript definitions for the annotation format" },

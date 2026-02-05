@@ -1,7 +1,4 @@
-<p>
-  <img src="./logo.svg" alt="" width="40" style="vertical-align: middle; margin-right: 12px;" />
-  <strong style="font-size: 2em;">Agentation</strong>
-</p>
+<img src="./logo.svg" alt="Agentation" width="50" />
 
 [![npm version](https://img.shields.io/npm/v/agentation)](https://www.npmjs.com/package/agentation)
 [![downloads](https://img.shields.io/npm/dm/agentation)](https://www.npmjs.com/package/agentation)

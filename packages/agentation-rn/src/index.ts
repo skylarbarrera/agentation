@@ -69,6 +69,8 @@ export { useAnnotations } from './hooks/useAnnotations';
 export type { UseAnnotationsOptions, UseAnnotationsReturn } from './hooks/useAnnotations';
 export { useAgentationScroll } from './hooks/useAgentationScroll';
 export type { UseAgentationScrollReturn } from './hooks/useAgentationScroll';
+export { useAgentationSync } from './hooks/useAgentationSync';
+export type { UseAgentationSyncOptions, UseAgentationSyncReturn } from './hooks/useAgentationSync';
 
 // Context (for advanced usage)
 export { AgenationContext } from './context/AgenationContext';
@@ -147,6 +149,20 @@ export {
   fireSessionUpdated,
   fireActionRequested,
 } from './utils/webhooks';
+
+// Sync utilities (v2)
+export {
+  checkHealth,
+  listSessions,
+  createSession,
+  getSession,
+  syncAnnotation,
+  updateAnnotation,
+  deleteAnnotation,
+  getPendingAnnotations,
+  getAllPendingAnnotations,
+  requestAction,
+} from './utils/sync';
 
 // =============================================================================
 // Type Guards

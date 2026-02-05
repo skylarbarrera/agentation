@@ -1,23 +1,40 @@
+/**
+ * Icons for Agentation Toolbar
+ * SVG icons adapted from web Agentation
+ * Falls back to emoji if react-native-svg not available
+ */
+
+import React from 'react';
 import { Text, View, StyleSheet } from 'react-native';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// Try to import react-native-svg, fallback to emoji if not available
 let Svg: any;
 let Path: any;
 let Circle: any;
+let G: any;
+let ClipPath: any;
+let Defs: any;
+let Rect: any;
 
 try {
   const svg = require('react-native-svg');
   Svg = svg.Svg;
   Path = svg.Path;
   Circle = svg.Circle;
-} catch {}
-/* eslint-enable @typescript-eslint/no-explicit-any */
+  G = svg.G;
+  ClipPath = svg.ClipPath;
+  Defs = svg.Defs;
+  Rect = svg.Rect;
+} catch {
+  // react-native-svg not available, will use emoji fallback
+}
 
 interface IconProps {
   size?: number;
   color?: string;
 }
 
+// Fallback component when SVG not available
 function EmojiIcon({ emoji, size = 24 }: { emoji: string; size?: number }) {
   return (
     <View style={[styles.emojiContainer, { width: size, height: size }]}>
@@ -26,6 +43,9 @@ function EmojiIcon({ emoji, size = 24 }: { emoji: string; size?: number }) {
   );
 }
 
+/**
+ * List with sparkle - Agentation logo icon
+ */
 export function IconListSparkle({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="✨" size={size} />;
 
@@ -62,22 +82,50 @@ export function IconListSparkle({ size = 24, color = 'currentColor' }: IconProps
   );
 }
 
-export function IconCheckSmall({ size = 14, color = 'currentColor' }: IconProps) {
-  if (!Svg) return <EmojiIcon emoji="✓" size={size} />;
+/**
+ * Play icon (triangle)
+ */
+export function IconPlay({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="▶️" size={size} />;
 
   return (
-    <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M3.9375 7L6.125 9.1875L10.5 4.8125"
+        d="M17.75 10.701C18.75 11.2783 18.75 12.7217 17.75 13.299L8.75 18.4952C7.75 19.0725 6.5 18.3509 6.5 17.1962L6.5 6.80384C6.5 5.64914 7.75 4.92746 8.75 5.50481L17.75 10.701Z"
         stroke={color}
         strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </Svg>
   );
 }
 
+/**
+ * Pause icon (two bars)
+ */
+export function IconPause({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="⏸️" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M8 6L8 18"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M16 18L16 6"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+/**
+ * Copy icon
+ */
 export function IconCopy({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="📋" size={size} />;
 
@@ -98,6 +146,9 @@ export function IconCopy({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
+/**
+ * Trash icon
+ */
 export function IconTrash({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="🗑️" size={size} />;
 
@@ -140,6 +191,9 @@ export function IconTrash({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
+/**
+ * Gear/Settings icon
+ */
 export function IconGear({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="⚙️" size={size} />;
 
@@ -157,6 +211,28 @@ export function IconGear({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
+/**
+ * Checkmark icon
+ */
+export function IconCheck({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="✓" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M16.25 8.75L10 15.25L7.25 12.25"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/**
+ * Close/X icon
+ */
 export function IconClose({ size = 24, color = 'currentColor' }: IconProps) {
   if (!Svg) return <EmojiIcon emoji="✕" size={size} />;
 
@@ -180,53 +256,17 @@ export function IconClose({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
-export function IconSun({ size = 24, color = 'currentColor' }: IconProps) {
-  if (!Svg) return <EmojiIcon emoji="☀️" size={size} />;
-
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={3.25} stroke={color} strokeWidth={1.5} />
-      <Path d="M12 4.75V5.25" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
-      <Path d="M12 18.75V19.25" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
-      <Path d="M17.25 6.75L16.9 7.1" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
-      <Path d="M7.1 16.9L6.75 17.25" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
-      <Path d="M19.25 12H18.75" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
-      <Path d="M5.25 12H4.75" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
-      <Path d="M17.25 17.25L16.9 16.9" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
-      <Path d="M7.1 7.1L6.75 6.75" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-export function IconMoon({ size = 24, color = 'currentColor' }: IconProps) {
-  if (!Svg) return <EmojiIcon emoji="🌙" size={size} />;
+/**
+ * Send arrow icon (for "Send to Agent")
+ * V2 feature
+ */
+export function IconSendArrow({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="➤" size={size} />;
 
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M17.715 15.15A6.5 6.5 0 0 1 9 6.035c-2.894.887-5 3.61-5 6.832 0 3.94 3.153 7.136 7.042 7.136 3.101 0 5.734-2.032 6.673-4.853Z"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-export function IconEye({ size = 24, color = 'currentColor' }: IconProps) {
-  if (!Svg) return <EmojiIcon emoji="👁️" size={size} />;
-
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M3.91752 12.7539C3.65127 12.2996 3.65037 11.7515 3.9149 11.2962C4.9042 9.59346 7.72688 5.49994 12 5.49994C16.2731 5.49994 19.0958 9.59346 20.0851 11.2962C20.3496 11.7515 20.3487 12.2996 20.0825 12.7539C19.0908 14.4459 16.2694 18.4999 12 18.4999C7.73064 18.4999 4.90918 14.4459 3.91752 12.7539Z"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M12 14.8261C13.5608 14.8261 14.8261 13.5608 14.8261 12C14.8261 10.4392 13.5608 9.17392 12 9.17392C10.4392 9.17392 9.17391 10.4392 9.17391 12C9.17391 13.5608 10.4392 14.8261 12 14.8261Z"
+        d="M10.3009 13.6949L20.102 3.89742M10.5795 14.1355L12.8019 18.5804C13.339 19.6545 13.6075 20.1916 13.9458 20.3356C14.2394 20.4606 14.575 20.4379 14.8492 20.2747C15.1651 20.0866 15.3591 19.5183 15.7472 18.3818L19.9463 6.08434C20.2845 5.09409 20.4535 4.59896 20.3378 4.27142C20.2371 3.98648 20.013 3.76234 19.7281 3.66167C19.4005 3.54595 18.9054 3.71502 17.9151 4.05315L5.61763 8.2523C4.48114 8.64037 3.91289 8.83441 3.72478 9.15032C3.56153 9.42447 3.53891 9.76007 3.66389 10.0537C3.80791 10.3919 4.34498 10.6605 5.41912 11.1976L9.86397 13.42C10.041 13.5085 10.1295 13.5527 10.2061 13.6118C10.2742 13.6643 10.3352 13.7253 10.3876 13.7933C10.4468 13.87 10.491 13.9585 10.5795 14.1355Z"
         stroke={color}
         strokeWidth={1.5}
         strokeLinecap="round"
@@ -236,20 +276,84 @@ export function IconEye({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
-export function IconEyeSlash({ size = 24, color = 'currentColor' }: IconProps) {
-  if (!Svg) return <EmojiIcon emoji="🙈" size={size} />;
+/**
+ * Wifi/connection icon (for connection status)
+ * V2 feature
+ */
+export function IconWifi({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="📶" size={size} />;
 
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M18.6025 9.28503C18.9174 8.9701 19.4364 8.99481 19.7015 9.35271C20.1484 9.95606 20.4943 10.507 20.7342 10.9199C21.134 11.6086 21.1329 12.4454 20.7303 13.1328C20.2144 14.013 19.2151 15.5225 17.7723 16.8193C16.3293 18.1162 14.3852 19.2497 12.0008 19.25C11.4192 19.25 10.8638 19.1823 10.3355 19.0613C9.77966 18.934 9.63498 18.2525 10.0382 17.8493C10.2412 17.6463 10.5374 17.573 10.8188 17.6302C11.1993 17.7076 11.5935 17.75 12.0008 17.75C13.8848 17.7497 15.4867 16.8568 16.7693 15.7041C18.0522 14.5511 18.9606 13.1867 19.4363 12.375C19.5656 12.1543 19.5659 11.8943 19.4373 11.6729C19.2235 11.3049 18.921 10.8242 18.5364 10.3003C18.3085 9.98991 18.3302 9.5573 18.6025 9.28503ZM12.0008 4.75C12.5814 4.75006 13.1358 4.81803 13.6632 4.93953C14.2182 5.06741 14.362 5.74812 13.9593 6.15091C13.7558 6.35435 13.4589 6.42748 13.1771 6.36984C12.7983 6.29239 12.4061 6.25006 12.0008 6.25C10.1167 6.25 8.51415 7.15145 7.23028 8.31543C5.94678 9.47919 5.03918 10.8555 4.56426 11.6729C4.43551 11.8945 4.43582 12.1542 4.56524 12.375C4.77587 12.7343 5.07189 13.2012 5.44718 13.7105C5.67623 14.0213 5.65493 14.4552 5.38193 14.7282C5.0671 15.0431 4.54833 15.0189 4.28292 14.6614C3.84652 14.0736 3.50813 13.5369 3.27129 13.1328C2.86831 12.4451 2.86717 11.6088 3.26739 10.9199C3.78185 10.0345 4.77959 8.51239 6.22247 7.2041C7.66547 5.89584 9.61202 4.75 12.0008 4.75Z"
+        d="M12 19.5C12.8284 19.5 13.5 18.8284 13.5 18C13.5 17.1716 12.8284 16.5 12 16.5C11.1716 16.5 10.5 17.1716 10.5 18C10.5 18.8284 11.1716 19.5 12 19.5Z"
         fill={color}
       />
       <Path
-        d="M5 19L19 5"
+        d="M12 13.5C10.8954 13.5 9.90793 14.0154 9.24264 14.8033"
         stroke={color}
         strokeWidth={1.5}
         strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M14.7574 14.8033C14.0921 14.0154 13.1046 13.5 12 13.5"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M6.34315 11.3431C8.18905 9.70053 10 9 12 9C14 9 15.811 9.70053 17.6569 11.3431"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M3.51472 8.51472C6.18629 6.16829 9 5 12 5C15 5 17.8137 6.16829 20.4853 8.51472"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/**
+ * Disconnected/offline icon
+ * V2 feature
+ */
+export function IconWifiOff({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="📵" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 19.5C12.8284 19.5 13.5 18.8284 13.5 18C13.5 17.1716 12.8284 16.5 12 16.5C11.1716 16.5 10.5 17.1716 10.5 18C10.5 18.8284 11.1716 19.5 12 19.5Z"
+        fill={color}
+      />
+      <Path
+        d="M3 3L21 21"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M9 13.5C10.5 13.5 11.5 14 12.5 15"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M6 9C8 9 10 9.5 12 10.5"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );

@@ -1,67 +1,21 @@
-import React, { useState, useCallback, useRef, useMemo, useContext } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   TouchableOpacity,
   Pressable,
   StyleSheet,
   Platform,
+  Alert,
   Animated,
   Text,
   StyleProp,
   ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IconListSparkle, IconClose, IconCopy, IconTrash, IconGear, IconSun, IconMoon, IconEye, IconEyeSlash, IconCheckSmall } from './Icons';
-import type { OutputDetailLevel } from '../types';
-import { useToolbarAnimations } from '../hooks/useToolbarAnimations';
-import { useToolbarSettings } from '../hooks/useToolbarSettings';
-import { AgenationContext } from '../context/AgenationContext';
-import { version as __VERSION__ } from '../../package.json';
-
-const THEME = {
-  dark: {
-    containerBg: '#1a1a1a',
-    textPrimary: '#FFFFFF',
-    textSecondary: 'rgba(255, 255, 255, 0.6)',
-    textTertiary: 'rgba(255, 255, 255, 0.5)',
-    textQuaternary: 'rgba(255, 255, 255, 0.4)',
-    toggleText: 'rgba(255, 255, 255, 0.85)',
-    border: 'rgba(255, 255, 255, 0.07)',
-    checkboxBorder: 'rgba(255, 255, 255, 0.2)',
-    checkboxCheckedBg: '#FFFFFF',
-    checkboxCheckedBorder: 'rgba(255, 255, 255, 0.3)',
-    checkmarkColor: '#1a1a1a',
-    dotInactive: 'rgba(255, 255, 255, 0.3)',
-    dotActive: '#FFFFFF',
-    iconDisabled: '#666666',
-    shadowOpacity: 0.2,
-    menuBorder: 'rgba(255, 255, 255, 0.08)',
-    menuShadowOffset: 4,
-    menuShadowOpacity: 0.3,
-    menuShadowRadius: 20,
-  },
-  light: {
-    containerBg: '#FFFFFF',
-    textPrimary: 'rgba(0, 0, 0, 0.85)',
-    textSecondary: 'rgba(0, 0, 0, 0.5)',
-    textTertiary: 'rgba(0, 0, 0, 0.4)',
-    textQuaternary: 'rgba(0, 0, 0, 0.4)',
-    toggleText: 'rgba(0, 0, 0, 0.5)',
-    border: 'rgba(0, 0, 0, 0.08)',
-    checkboxBorder: 'rgba(0, 0, 0, 0.15)',
-    checkboxCheckedBg: '#1a1a1a',
-    checkboxCheckedBorder: '#1a1a1a',
-    checkmarkColor: '#FFFFFF',
-    dotInactive: 'rgba(0, 0, 0, 0.2)',
-    dotActive: 'rgba(0, 0, 0, 0.7)',
-    iconDisabled: 'rgba(0, 0, 0, 0.3)',
-    shadowOpacity: 0.2,
-    menuBorder: 'rgba(0, 0, 0, 0.04)',
-    menuShadowOffset: 1,
-    menuShadowOpacity: 0.25,
-    menuShadowRadius: 8,
-  },
-} as const;
+import { IconListSparkle, IconClose, IconCopy, IconTrash, IconGear, IconPlay, IconPause, IconSendArrow, IconWifi, IconWifiOff } from './Icons';
+import type { OutputDetailLevel, AgenationSettings, ConnectionStatus } from '../types';
+import { DEFAULT_SETTINGS, COLOR_OPTIONS } from '../types';
+import { loadSettings, saveSettings } from '../utils/storage';
 
 const DETAIL_LEVEL_LABELS: Record<OutputDetailLevel, string> = {
   compact: 'Compact',
@@ -69,6 +23,14 @@ const DETAIL_LEVEL_LABELS: Record<OutputDetailLevel, string> = {
   detailed: 'Detailed',
   forensic: 'Forensic',
 };
+
+const DETAIL_LEVEL_ORDER: OutputDetailLevel[] = ['compact', 'standard', 'detailed', 'forensic'];
+
+function getNextDetailLevel(current: OutputDetailLevel): OutputDetailLevel {
+  const currentIndex = DETAIL_LEVEL_ORDER.indexOf(current);
+  const nextIndex = (currentIndex + 1) % DETAIL_LEVEL_ORDER.length;
+  return DETAIL_LEVEL_ORDER[nextIndex];
+}
 
 interface FloatingContainerProps {
   children: React.ReactNode;
@@ -82,6 +44,7 @@ function FloatingContainer({ children, style }: FloatingContainerProps) {
     </View>
   );
 }
+
 
 interface AnimatedButtonProps {
   onPress: () => void;
@@ -124,7 +87,7 @@ function AnimatedButton({ onPress, disabled, style, children }: AnimatedButtonPr
 }
 
 export interface ToolbarProps {
-  isActive: boolean;
+  isAnnotationMode: boolean;
   annotationCount: number;
   onToggleMode: () => void;
   onCopyMarkdown: () => void;
@@ -138,13 +101,24 @@ export interface ToolbarProps {
   onAnnotationColorChange?: (color: string) => void;
   offset?: { x?: number; y?: number };
   onSettingsMenuChange?: (isOpen: boolean) => void;
-  showMarkers?: boolean;
-  onShowMarkersChange?: (show: boolean) => void;
+  // Pause button (shown when plugin provides it)
+  showPauseButton?: boolean;
+  isPaused?: boolean;
+  onPauseToggle?: () => void;
+  // V2 MCP Integration Props
+  /** Show "Send to Agent" button when endpoint is configured */
+  showSendToAgent?: boolean;
+  /** Callback when "Send to Agent" is clicked */
+  onSendToAgent?: () => void;
+  /** Connection status to MCP server */
+  connectionStatus?: ConnectionStatus;
+  /** Show connection status indicator */
+  showConnectionStatus?: boolean;
 }
 
 export function Toolbar(props: ToolbarProps) {
   const {
-    isActive,
+    isAnnotationMode,
     annotationCount,
     onToggleMode,
     onCopyMarkdown,
@@ -158,37 +132,64 @@ export function Toolbar(props: ToolbarProps) {
     onAnnotationColorChange,
     offset,
     onSettingsMenuChange,
-    showMarkers: controlledShowMarkers,
-    onShowMarkersChange,
+    showPauseButton = false,
+    isPaused = false,
+    onPauseToggle,
+    // V2 MCP props
+    showSendToAgent = false,
+    onSendToAgent,
+    connectionStatus = 'disconnected',
+    showConnectionStatus = false,
   } = props;
 
   const insets = useSafeAreaInsets();
-  const context = useContext(AgenationContext);
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  const [internalShowMarkers, setInternalShowMarkers] = useState(true);
-  const showMarkers = controlledShowMarkers ?? internalShowMarkers;
+  const [internalSettings, setInternalSettings] = useState<AgenationSettings>(DEFAULT_SETTINGS);
 
-  const isDarkMode = context?.isDarkMode ?? true;
-  const setIsDarkMode = context?.setIsDarkMode ?? (() => {});
-  const theme = useMemo(() => THEME[isDarkMode ? 'dark' : 'light'], [isDarkMode]);
+  const expandAnim = useRef(new Animated.Value(0)).current;
+  const settingsAnim = useRef(new Animated.Value(0)).current;
 
-  const animations = useToolbarAnimations(isExpanded, showSettingsMenu, annotationCount);
-
-  const settings = useToolbarSettings({
-    controlledOutputDetail,
-    onOutputDetailChange,
-    controlledClearAfterCopy,
-    onClearAfterCopyChange,
-    controlledAnnotationColor,
-    onAnnotationColorChange,
+  const fabOpacity = expandAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0],
   });
+  const toolbarOpacity = expandAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
+  const settingsOpacity = settingsAnim;
+
+  const currentOutputDetail = controlledOutputDetail ?? internalSettings.outputDetail;
+  const currentClearAfterCopy = controlledClearAfterCopy ?? internalSettings.clearAfterCopy;
+  const currentAnnotationColor = controlledAnnotationColor ?? internalSettings.annotationColor;
+
+  useEffect(() => {
+    loadSettings().then(setInternalSettings);
+  }, []);
+
+  useEffect(() => {
+    Animated.timing(expandAnim, {
+      toValue: isExpanded ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isExpanded, expandAnim]);
+
+  useEffect(() => {
+    Animated.timing(settingsAnim, {
+      toValue: showSettingsMenu ? 1 : 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  }, [showSettingsMenu, settingsAnim]);
 
   const handleFabPress = useCallback(() => {
     if (!isExpanded) {
       setIsExpanded(true);
-      if (!isActive) {
+      if (!isAnnotationMode) {
         onToggleMode();
       }
     } else {
@@ -197,18 +198,25 @@ export function Toolbar(props: ToolbarProps) {
         setShowSettingsMenu(false);
         onSettingsMenuChange?.(false);
       }
-      if (isActive) {
+      if (isAnnotationMode) {
         onToggleMode();
       }
     }
-  }, [isExpanded, isActive, onToggleMode, showSettingsMenu, onSettingsMenuChange]);
+  }, [isExpanded, isAnnotationMode, onToggleMode, showSettingsMenu, onSettingsMenuChange]);
 
   const handleCopyPress = useCallback(() => {
     onCopyMarkdown();
   }, [onCopyMarkdown]);
 
   const handleTrashPress = useCallback(() => {
-    onClearAll();
+    Alert.alert(
+      'Clear All Annotations',
+      'Are you sure you want to delete all annotations?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear All', style: 'destructive', onPress: onClearAll },
+      ]
+    );
   }, [onClearAll]);
 
   const handleSettingsPress = useCallback(() => {
@@ -219,17 +227,46 @@ export function Toolbar(props: ToolbarProps) {
     });
   }, [onSettingsMenuChange]);
 
-  const handleMarkersToggle = useCallback(() => {
-    const newValue = !showMarkers;
-    setInternalShowMarkers(newValue);
-    onShowMarkersChange?.(newValue);
-  }, [showMarkers, onShowMarkersChange]);
+  const handleOutputDetailCycle = useCallback(() => {
+    const nextLevel = getNextDetailLevel(currentOutputDetail);
+    if (onOutputDetailChange) {
+      onOutputDetailChange(nextLevel);
+    } else {
+      const newSettings = { ...internalSettings, outputDetail: nextLevel };
+      setInternalSettings(newSettings);
+      saveSettings({ outputDetail: nextLevel });
+    }
+  }, [currentOutputDetail, onOutputDetailChange, internalSettings]);
+
+  const handleClearAfterCopyToggle = useCallback(() => {
+    const newValue = !currentClearAfterCopy;
+    if (onClearAfterCopyChange) {
+      onClearAfterCopyChange(newValue);
+    } else {
+      const newSettings = { ...internalSettings, clearAfterCopy: newValue };
+      setInternalSettings(newSettings);
+      saveSettings({ clearAfterCopy: newValue });
+    }
+  }, [currentClearAfterCopy, onClearAfterCopyChange, internalSettings]);
+
+  const handleAnnotationColorCycle = useCallback(() => {
+    const currentIndex = COLOR_OPTIONS.findIndex(c => c.value === currentAnnotationColor);
+    const nextIndex = (currentIndex + 1) % COLOR_OPTIONS.length;
+    const nextColor = COLOR_OPTIONS[nextIndex].value;
+    if (onAnnotationColorChange) {
+      onAnnotationColorChange(nextColor);
+    } else {
+      const newSettings = { ...internalSettings, annotationColor: nextColor };
+      setInternalSettings(newSettings);
+      saveSettings({ annotationColor: nextColor });
+    }
+  }, [currentAnnotationColor, onAnnotationColorChange, internalSettings]);
 
   const bottomPosition = Math.max(insets.bottom, 16) + 16 + (offset?.y ?? 0);
   const rightPosition = 20 + (offset?.x ?? 0);
 
-  const iconColor = theme.textPrimary;
-  const badgeColor = settings.currentAnnotationColor;
+  const iconColor = '#FFFFFF';
+  const badgeColor = currentAnnotationColor;
 
   const containerStyle = [styles.container, { zIndex, bottom: bottomPosition, right: rightPosition }];
 
@@ -238,105 +275,41 @@ export function Toolbar(props: ToolbarProps) {
       <Animated.View
         style={[
           styles.settingsMenuWrapper,
-          {
-            opacity: animations.settingsOpacity,
-            transform: [
-              { scale: animations.settingsScale },
-              { translateY: animations.settingsTranslateY },
-            ],
-          },
+          { opacity: settingsOpacity },
         ]}
         pointerEvents={showSettingsMenu ? 'auto' : 'none'}
       >
-        <FloatingContainer style={[
-          styles.settingsMenu,
-          {
-            backgroundColor: theme.containerBg,
-            borderWidth: 1,
-            borderColor: theme.menuBorder,
-            ...Platform.select({
-              ios: {
-                shadowOffset: { width: 0, height: theme.menuShadowOffset },
-                shadowOpacity: theme.menuShadowOpacity,
-                shadowRadius: theme.menuShadowRadius,
-              },
-            }),
-          },
-        ]}>
-          <View style={[styles.settingsHeader, { borderBottomColor: theme.border }]}>
-            <Text style={[styles.settingsBrand, { color: theme.textPrimary }]}>
-              <Text style={{ color: settings.currentAnnotationColor }}>/</Text>
-              agentation
+        <FloatingContainer style={styles.settingsMenu}>
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={handleOutputDetailCycle}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.settingsLabel}>Output Detail</Text>
+            <Text style={styles.settingsValueText}>
+              {DETAIL_LEVEL_LABELS[currentOutputDetail]}
             </Text>
-            <Text style={[styles.settingsVersion, { color: theme.textQuaternary }]}>v{__VERSION__}</Text>
-            <TouchableOpacity
-              style={styles.themeToggle}
-              onPress={() => setIsDarkMode(!isDarkMode)}
-              activeOpacity={0.7}
-            >
-              {isDarkMode ? <IconSun size={14} color={theme.textQuaternary} /> : <IconMoon size={14} color={theme.textQuaternary} />}
-            </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
 
-          <View style={styles.settingsSectionFirst}>
-            <TouchableOpacity
-              style={styles.settingsRow}
-              onPress={settings.handleOutputDetailCycle}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.settingsLabel, { color: theme.textSecondary }]}>Output Detail</Text>
-              <View style={styles.settingsValueWithDots}>
-                <Text style={[styles.settingsValueText, { color: theme.textPrimary }]}>
-                  {DETAIL_LEVEL_LABELS[settings.currentOutputDetail]}
-                </Text>
-                <View style={styles.cycleDots}>
-                  {(['compact', 'standard', 'detailed', 'forensic'] as OutputDetailLevel[]).map((level) => (
-                    <View
-                      key={level}
-                      style={[
-                        styles.cycleDot,
-                        { backgroundColor: theme.dotInactive },
-                        settings.currentOutputDetail === level && { backgroundColor: theme.dotActive },
-                      ]}
-                    />
-                  ))}
-                </View>
-              </View>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={handleClearAfterCopyToggle}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.settingsLabel}>Clear After Copy</Text>
+            <View style={[styles.checkbox, currentClearAfterCopy && styles.checkboxChecked]}>
+              {currentClearAfterCopy && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+          </TouchableOpacity>
 
-          <View style={[styles.settingsSection, { borderTopColor: theme.border }]}>
-            <TouchableOpacity
-              style={styles.settingsRow}
-              onPress={settings.handleAnnotationColorCycle}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.settingsLabel, { color: theme.textSecondary }]}>Marker Colour</Text>
-              <View style={[styles.colorSwatch, { backgroundColor: settings.currentAnnotationColor }]} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={[styles.settingsSection, { borderTopColor: theme.border }]}>
-            <TouchableOpacity
-              style={styles.toggleRow}
-              onPress={settings.handleClearAfterCopyToggle}
-              activeOpacity={0.6}
-            >
-              <View style={[
-                styles.checkbox,
-                { borderColor: theme.checkboxBorder },
-                settings.currentClearAfterCopy && {
-                  backgroundColor: theme.checkboxCheckedBg,
-                  borderColor: theme.checkboxCheckedBorder,
-                },
-              ]}>
-                {settings.currentClearAfterCopy && (
-                  <IconCheckSmall size={12} color={theme.checkmarkColor} />
-                )}
-              </View>
-              <Text style={[styles.toggleLabel, { color: theme.toggleText }]}>Clear after output</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={handleAnnotationColorCycle}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.settingsLabel}>Marker Color</Text>
+            <View style={[styles.colorSwatch, { backgroundColor: currentAnnotationColor }]} />
+          </TouchableOpacity>
         </FloatingContainer>
       </Animated.View>
 
@@ -344,71 +317,47 @@ export function Toolbar(props: ToolbarProps) {
         <Animated.View
           style={[
             styles.fabWrapper,
-            {
-              opacity: animations.fabOpacity,
-              transform: [
-                { scale: animations.entranceScale },
-                { rotate: animations.entranceRotateInterpolate },
-              ],
-            },
+            { opacity: fabOpacity },
           ]}
           pointerEvents={isExpanded ? 'none' : 'auto'}
         >
-          <AnimatedButton onPress={handleFabPress} style={[
-            styles.fab,
-            { backgroundColor: theme.containerBg },
-            Platform.select({
-              ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-              },
-              android: {
-                elevation: 8,
-              },
-            }),
-          ]}>
-            <IconListSparkle size={20} color={iconColor} />
+          <AnimatedButton onPress={handleFabPress} style={styles.fab}>
+            <FloatingContainer style={styles.fabGlass}>
+              <IconListSparkle size={24} color={iconColor} />
+            </FloatingContainer>
           </AnimatedButton>
 
           {annotationCount > 0 && (
-            <Animated.View
-              style={[
-                styles.badge,
-                { backgroundColor: badgeColor, transform: [{ scale: animations.badgeScale }] },
-              ]}
-            >
+            <View style={[styles.badge, { backgroundColor: badgeColor }]}>
               <Text style={styles.badgeText}>
                 {annotationCount > 99 ? '99+' : annotationCount}
               </Text>
-            </Animated.View>
+            </View>
           )}
         </Animated.View>
 
         <Animated.View
           style={[
             styles.expandedWrapper,
-            { opacity: animations.toolbarOpacity },
+            { opacity: toolbarOpacity },
           ]}
           pointerEvents={isExpanded ? 'auto' : 'none'}
         >
-          <FloatingContainer style={[styles.toolbar, { backgroundColor: theme.containerBg }]}>
+          <FloatingContainer style={styles.toolbar}>
             <View style={styles.toolbarButtons}>
-              <AnimatedButton
-                onPress={handleMarkersToggle}
-                disabled={annotationCount === 0}
-                style={[
-                  styles.toolbarButton,
-                  annotationCount === 0 && styles.toolbarButtonDisabled,
-                ]}
-              >
-                {showMarkers ? (
-                  <IconEye size={24} color={annotationCount > 0 ? iconColor : theme.iconDisabled} />
-                ) : (
-                  <IconEyeSlash size={24} color={annotationCount > 0 ? iconColor : theme.iconDisabled} />
-                )}
+              <AnimatedButton onPress={handleFabPress} style={styles.toolbarButton}>
+                <IconClose size={22} color={iconColor} />
               </AnimatedButton>
+
+              {showPauseButton && onPauseToggle && (
+                <AnimatedButton onPress={onPauseToggle} style={styles.toolbarButton}>
+                  {isPaused ? (
+                    <IconPlay size={22} color={iconColor} />
+                  ) : (
+                    <IconPause size={22} color={iconColor} />
+                  )}
+                </AnimatedButton>
+              )}
 
               <AnimatedButton
                 onPress={handleCopyPress}
@@ -418,7 +367,7 @@ export function Toolbar(props: ToolbarProps) {
                   annotationCount === 0 && styles.toolbarButtonDisabled,
                 ]}
               >
-                <IconCopy size={24} color={annotationCount > 0 ? iconColor : theme.iconDisabled} />
+                <IconCopy size={22} color={annotationCount > 0 ? iconColor : '#666'} />
               </AnimatedButton>
 
               <AnimatedButton
@@ -429,20 +378,47 @@ export function Toolbar(props: ToolbarProps) {
                   annotationCount === 0 && styles.toolbarButtonDisabled,
                 ]}
               >
-                <IconTrash size={24} color={annotationCount > 0 ? iconColor : theme.iconDisabled} />
+                <IconTrash size={22} color={annotationCount > 0 ? iconColor : '#666'} />
               </AnimatedButton>
+
+              {showSendToAgent && onSendToAgent && (
+                <AnimatedButton
+                  onPress={onSendToAgent}
+                  disabled={annotationCount === 0}
+                  style={[
+                    styles.toolbarButton,
+                    annotationCount === 0 && styles.toolbarButtonDisabled,
+                  ]}
+                >
+                  <IconSendArrow size={22} color={annotationCount > 0 ? iconColor : '#666'} />
+                </AnimatedButton>
+              )}
 
               <AnimatedButton onPress={handleSettingsPress} style={styles.toolbarButton}>
-                <IconGear size={24} color={iconColor} />
+                <IconGear size={22} color={iconColor} />
               </AnimatedButton>
 
-              <View style={[styles.toolbarDivider, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)' }]} />
-
-              <AnimatedButton onPress={handleFabPress} style={styles.toolbarButton}>
-                <IconClose size={24} color={iconColor} />
-              </AnimatedButton>
+              {showConnectionStatus && (
+                <View style={styles.connectionIndicator}>
+                  {connectionStatus === 'connected' ? (
+                    <IconWifi size={16} color="#34C759" />
+                  ) : connectionStatus === 'connecting' ? (
+                    <IconWifi size={16} color="#FFD60A" />
+                  ) : (
+                    <IconWifiOff size={16} color="#666" />
+                  )}
+                </View>
+              )}
             </View>
           </FloatingContainer>
+
+          {annotationCount > 0 && (
+            <View style={[styles.badgeExpanded, { backgroundColor: badgeColor }]}>
+              <Text style={styles.badgeText}>
+                {annotationCount > 99 ? '99+' : annotationCount}
+              </Text>
+            </View>
+          )}
         </Animated.View>
       </View>
     </View>
@@ -466,9 +442,15 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   fab: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    overflow: 'hidden',
+  },
+  fabGlass: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -477,72 +459,68 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   toolbar: {
-    borderRadius: 24,
-    paddingHorizontal: 6,
-    paddingVertical: 6,
+    borderRadius: 28,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
   },
   toolbarButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   toolbarButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
   toolbarButtonDisabled: {
-    opacity: 0.35,
-  },
-  toolbarDivider: {
-    width: 1,
-    height: 12,
-    marginHorizontal: 2,
+    opacity: 0.4,
   },
 
   floatingBackground: {
+    backgroundColor: '#1a1a1a',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 24,
       },
       android: {
-        elevation: 8,
+        elevation: 12,
       },
     }),
   },
 
   badge: {
     position: 'absolute',
-    top: -8,
-    right: -8,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    top: -4,
+    right: -4,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 5,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    paddingHorizontal: 6,
+  },
+  badgeExpanded: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
   },
 
@@ -550,102 +528,68 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   settingsMenu: {
-    borderRadius: 16,
-    paddingTop: 13,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    minWidth: 205,
-  },
-  settingsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 24,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-  },
-  settingsBrand: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: -0.12,
-  },
-  settingsVersion: {
-    fontSize: 11,
-    fontWeight: '400',
-    marginLeft: 'auto',
-    letterSpacing: -0.12,
-  },
-  themeToggle: {
-    width: 22,
-    height: 22,
-    marginLeft: 8,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  settingsSectionFirst: {
-    paddingTop: 8,
-  },
-  settingsSection: {
-    paddingTop: 8,
-    marginTop: 8,
-    borderTopWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
   },
   settingsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 24,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 24,
+    paddingVertical: 10,
+    minWidth: 170,
   },
   settingsLabel: {
+    color: 'rgba(255, 255, 255, 0.55)',
     fontSize: 13,
     fontWeight: '400',
   },
-  toggleLabel: {
-    fontSize: 13,
-    fontWeight: '400',
-    marginLeft: 8,
+  settingsValue: {
+    paddingHorizontal: 4,
   },
   settingsValueText: {
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '500',
   },
-  settingsValueWithDots: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  settingsToggle: {
+    paddingHorizontal: 4,
   },
-  cycleDots: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 2,
-  },
-  cycleDot: {
-    width: 2,
-    height: 2,
-    borderRadius: 1,
-  },
-  cycleDotActive: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
+  settingsToggleActive: {},
+  settingsToggleText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '500',
   },
   colorSwatch: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
   },
   checkbox: {
-    width: 16,
-    height: 16,
+    width: 18,
+    height: 18,
     borderRadius: 4,
     borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 2,
+  },
+  checkboxChecked: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
+  },
+  checkmark: {
+    color: '#1a1a1a',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: -1,
+  },
+  connectionIndicator: {
+    marginLeft: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 24,
+    height: 24,
   },
 });

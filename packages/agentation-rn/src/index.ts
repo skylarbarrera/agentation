@@ -138,6 +138,16 @@ export {
   truncate,
 } from './utils/helpers';
 
+// Webhooks (v2)
+export {
+  fireWebhook,
+  fireAnnotationCreated,
+  fireAnnotationUpdated,
+  fireAnnotationDeleted,
+  fireSessionUpdated,
+  fireActionRequested,
+} from './utils/webhooks';
+
 // =============================================================================
 // Type Guards
 // =============================================================================

@@ -8,7 +8,7 @@ import { colors, typography } from './theme';
 import { EventsPanel } from './components';
 import { useApiEvents } from './hooks';
 
-import { HomeScreen, SettingsScreen, ProfileScreen, ScrollExampleScreen, ModalExampleScreen } from './screens';
+import { HomeScreen, SettingsScreen, ProfileScreen, ScrollExampleScreen, ModalExampleScreen, AnimationScreen } from './screens';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -16,6 +16,7 @@ export type RootStackParamList = {
   Profile: { userId: string };
   ScrollExample: undefined;
   ModalExample: undefined;
+  Animation: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -79,6 +80,11 @@ export default function App() {
               name="ModalExample"
               component={ModalExampleScreen}
               options={{ title: 'Modal Example' }}
+            />
+            <Stack.Screen
+              name="Animation"
+              component={AnimationScreen}
+              options={{ title: 'Animations' }}
             />
           </Stack.Navigator>
           </NavigationContainer>

@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "agentation-rn": "workspace:*",
-    "reanimated-pause-state": "link:../../../../reanimated-pause-state",
+    "reanimated-pause-state": "link:../../../reanimated-pause-state",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
   },

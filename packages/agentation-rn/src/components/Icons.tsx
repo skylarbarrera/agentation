@@ -417,6 +417,113 @@ export function IconHelp({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
+/**
+ * Sun icon (for light mode toggle)
+ */
+export function IconSun({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="☀️" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={4.25} stroke={color} strokeWidth={1.5} />
+      <Path d="M12 4.75V3.25" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M12 20.75V19.25" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M19.25 12H20.75" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M3.25 12H4.75" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M17.182 6.81802L18.2426 5.75736" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M5.75736 18.2426L6.81802 17.182" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M17.182 17.182L18.2426 18.2426" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M5.75736 5.75736L6.81802 6.81802" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+/**
+ * Moon icon (for dark mode toggle)
+ */
+export function IconMoon({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="🌙" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M19.9001 13.1C19.6667 15.3446 18.5389 17.4089 16.7617 18.8332C14.9845 20.2576 12.7019 20.9291 10.4194 20.6997C8.13682 20.4702 6.03588 19.3578 4.55871 17.6003C3.08154 15.8427 2.34139 13.5839 2.49219 11.2974C2.64299 9.01089 3.67348 6.87089 5.37285 5.32299C7.07222 3.77509 9.30992 2.94259 11.6001 2.9999C10.4001 4.3999 10.1001 6.3999 10.8001 8.1999C11.5001 9.9999 13.1001 11.2999 15.0001 11.6999C16.9001 12.0999 18.9001 11.4999 20.2001 10.1999C20.1001 11.1999 20.0001 12.1999 19.9001 13.1Z"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/**
+ * Eye icon (for markers visibility toggle - visible state)
+ */
+export function IconEye({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="👁️" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3.91752 12.7539C3.65127 12.2996 3.65037 11.7515 3.9149 11.2962C4.9042 9.59346 7.72688 5.49994 12 5.49994C16.2731 5.49994 19.0958 9.59346 20.0851 11.2962C20.3496 11.7515 20.3487 12.2996 20.0825 12.7539C19.0908 14.4459 16.2694 18.4999 12 18.4999C7.73064 18.4999 4.90918 14.4459 3.91752 12.7539Z"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M12 14.8261C13.5608 14.8261 14.8261 13.5608 14.8261 12C14.8261 10.4392 13.5608 9.17392 12 9.17392C10.4392 9.17392 9.17391 10.4392 9.17391 12C9.17391 13.5608 10.4392 14.8261 12 14.8261Z"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/**
+ * Eye slash icon (for markers visibility toggle - hidden state)
+ */
+export function IconEyeSlash({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="🙈" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M18.6025 9.28503C18.9174 8.9701 19.4364 8.99481 19.7015 9.35271C20.1484 9.95606 20.4943 10.507 20.7342 10.9199C21.134 11.6086 21.1329 12.4454 20.7303 13.1328C20.2144 14.013 19.2151 15.5225 17.7723 16.8193C16.3293 18.1162 14.3852 19.2497 12.0008 19.25C11.4192 19.25 10.8638 19.1823 10.3355 19.0613C9.77966 18.934 9.63498 18.2525 10.0382 17.8493C10.2412 17.6463 10.5374 17.573 10.8188 17.6302C11.1993 17.7076 11.5935 17.75 12.0008 17.75C13.8848 17.7497 15.4867 16.8568 16.7693 15.7041C18.0522 14.5511 18.9606 13.1867 19.4363 12.375C19.5656 12.1543 19.5659 11.8943 19.4373 11.6729C19.2235 11.3049 18.921 10.8242 18.5364 10.3003C18.3085 9.98991 18.3302 9.5573 18.6025 9.28503ZM12.0008 4.75C12.5814 4.75006 13.1358 4.81803 13.6632 4.93953C14.2182 5.06741 14.362 5.74812 13.9593 6.15091C13.7558 6.35435 13.4589 6.42748 13.1771 6.36984C12.7983 6.29239 12.4061 6.25006 12.0008 6.25C10.1167 6.25 8.51415 7.15145 7.23028 8.31543C5.94678 9.47919 5.03918 10.8555 4.56426 11.6729C4.43551 11.8945 4.43582 12.1542 4.56524 12.375C4.77587 12.7343 5.07189 13.2012 5.44718 13.7105C5.67623 14.0213 5.65493 14.4552 5.38193 14.7282C5.0671 15.0431 4.54833 15.0189 4.28292 14.6614C3.84652 14.0736 3.50813 13.5369 3.27129 13.1328C2.86831 12.4451 2.86717 11.6088 3.26739 10.9199C3.78185 10.0345 4.77959 8.51239 6.22247 7.2041C7.66547 5.89584 9.61202 4.75 12.0008 4.75Z"
+        fill={color}
+      />
+      <Path
+        d="M5 19L19 5"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+/**
+ * Small checkmark icon (for checkbox inside settings)
+ */
+export function IconCheckSmall({ size = 12, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="✓" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 12 12" fill="none">
+      <Path
+        d="M2.5 6L5 8.5L9.5 3.5"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 const styles = StyleSheet.create({
   emojiContainer: {
     justifyContent: 'center',

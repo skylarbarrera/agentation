@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,29 +15,63 @@ import {
 import type { AnnotationPopupProps } from '../types';
 import { PendingMarker } from './AnnotationMarker';
 
-const COLORS = {
-  background: '#1a1a1a',
-  backgroundLight: 'rgba(255, 255, 255, 0.05)',
-  border: 'rgba(255, 255, 255, 0.15)',
-  borderFocus: '#3c82f7',
-  text: '#fff',
-  textMuted: 'rgba(255, 255, 255, 0.65)',
-  textDim: 'rgba(255, 255, 255, 0.35)',
-  textQuote: 'rgba(255, 255, 255, 0.5)',
-  accent: '#3c82f7',
-  danger: '#ff3b30',
-};
+const THEME = {
+  dark: {
+    background: '#1a1a1a',
+    backgroundLight: 'rgba(255, 255, 255, 0.05)',
+    backgroundQuote: 'rgba(255, 255, 255, 0.05)',
+    border: 'rgba(255, 255, 255, 0.15)',
+    popupBorder: 'rgba(255, 255, 255, 0.08)',
+    text: '#fff',
+    textMuted: 'rgba(255, 255, 255, 0.5)',
+    textDim: 'rgba(255, 255, 255, 0.35)',
+    textQuote: 'rgba(255, 255, 255, 0.6)',
+    cancelText: 'rgba(255, 255, 255, 0.5)',
+    danger: '#ff3b30',
+    shadowOpacity: 0.3,
+    overlayBg: 'rgba(0, 0, 0, 0.4)',
+  },
+  light: {
+    background: '#FFFFFF',
+    backgroundLight: 'rgba(0, 0, 0, 0.03)',
+    backgroundQuote: 'rgba(0, 0, 0, 0.04)',
+    border: 'rgba(0, 0, 0, 0.12)',
+    popupBorder: 'rgba(0, 0, 0, 0.06)',
+    text: '#1a1a1a',
+    textMuted: 'rgba(0, 0, 0, 0.6)',
+    textDim: 'rgba(0, 0, 0, 0.4)',
+    textQuote: 'rgba(0, 0, 0, 0.55)',
+    cancelText: 'rgba(0, 0, 0, 0.5)',
+    danger: '#ff3b30',
+    shadowOpacity: 0.12,
+    overlayBg: 'rgba(0, 0, 0, 0.2)',
+  },
+} as const;
 
 interface ExtendedPopupProps extends AnnotationPopupProps {
   detectedElement?: string;
-  toolbarHeight?: number; // Height of toolbar area to avoid
-  settingsMenuHeight?: number; // Extra height when settings menu is open
-  accentColor?: string; // Annotation color for accents
+  toolbarHeight?: number;
+  settingsMenuHeight?: number;
+  accentColor?: string;
+  isDarkMode?: boolean;
 }
 
 export function AnnotationPopup(props: ExtendedPopupProps) {
-  const { annotation, position, visible, onSave, onCancel, onDelete, detectedElement, toolbarHeight = 80, settingsMenuHeight = 0, accentColor = '#3c82f7' } = props;
+  const {
+    annotation,
+    position,
+    visible,
+    onSave,
+    onCancel,
+    onDelete,
+    detectedElement,
+    toolbarHeight = 80,
+    settingsMenuHeight = 0,
+    accentColor = '#3c82f7',
+    isDarkMode = true,
+  } = props;
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const theme = useMemo(() => THEME[isDarkMode ? 'dark' : 'light'], [isDarkMode]);
 
   const [comment, setComment] = useState(annotation?.comment || '');
   const [isFocused, setIsFocused] = useState(false);
@@ -139,19 +173,14 @@ export function AnnotationPopup(props: ExtendedPopupProps) {
   const markerBottom = position.y + markerSize / 2;
 
   // Where does the blocked area start? (keyboard, settings, or toolbar)
-  // Toolbar is ALWAYS at bottom, settings menu appears above it when open
-  // Settings menu has 8px margin below it (between it and toolbar)
   let blockedAreaTop: number;
   if (keyboardHeight > 0) {
     blockedAreaTop = screenHeight - keyboardHeight;
   } else if (settingsMenuHeight > 0) {
-    // Settings menu open - just use toolbar height, the popup will be above settings
     blockedAreaTop = screenHeight - toolbarHeight - settingsMenuHeight;
   } else {
-    // Settings closed - popup must stay above toolbar
     blockedAreaTop = screenHeight - toolbarHeight;
   }
-
 
   // 3. Try to position below marker (preferred)
   const belowY = markerBottom + spacing;
@@ -180,7 +209,7 @@ export function AnnotationPopup(props: ExtendedPopupProps) {
   return (
     <>
       <Pressable
-        style={styles.overlay}
+        style={[styles.overlay, { backgroundColor: theme.overlayBg }]}
         onPress={handleCancel}
       />
 
@@ -193,7 +222,6 @@ export function AnnotationPopup(props: ExtendedPopupProps) {
         style={styles.keyboardAvoid}
         pointerEvents="box-none"
       >
-        {/* Wrapper positioned using calculated popupY (below/above marker or fallback) */}
         <View
           style={{
             position: 'absolute',
@@ -207,80 +235,90 @@ export function AnnotationPopup(props: ExtendedPopupProps) {
             style={[
               styles.popup,
               {
+                backgroundColor: theme.background,
+                borderColor: theme.popupBorder,
                 opacity: opacityAnim,
                 transform: [{ scale: scaleAnim }, { translateY: translateYAnim }],
               },
+              Platform.select({
+                ios: { shadowOpacity: theme.shadowOpacity },
+              }),
             ]}
           >
-          <View style={styles.header}>
-            <Text style={styles.elementName} numberOfLines={1}>
-              {elementName}
-            </Text>
-          </View>
-
-          {selectedText && (
-            <View style={styles.quote}>
-              <Text style={styles.quoteText} numberOfLines={3}>
-                &ldquo;{selectedText.slice(0, 80)}
-                {selectedText.length > 80 ? '...' : ''}&rdquo;
+            <View style={styles.header}>
+              <Text style={[styles.elementName, { color: theme.textMuted }]} numberOfLines={1}>
+                {elementName}
               </Text>
             </View>
-          )}
 
-          <TextInput
-            ref={inputRef}
-            style={[
-              styles.input,
-              isFocused && [styles.inputFocused, { borderColor: accentColor }],
-            ]}
-            value={comment}
-            onChangeText={setComment}
-            placeholder="What should change?"
-            placeholderTextColor={COLORS.textDim}
-            multiline
-            numberOfLines={2}
-            textAlignVertical="top"
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            onSubmitEditing={handleSave}
-            blurOnSubmit={false}
-          />
-
-          <View style={styles.actions}>
-            {isEditMode && onDelete && (
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={handleDelete}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.deleteButtonText}>Delete</Text>
-              </TouchableOpacity>
+            {selectedText && (
+              <View style={[styles.quote, { backgroundColor: theme.backgroundQuote }]}>
+                <Text style={[styles.quoteText, { color: theme.textQuote }]} numberOfLines={3}>
+                  &ldquo;{selectedText.slice(0, 80)}
+                  {selectedText.length > 80 ? '...' : ''}&rdquo;
+                </Text>
+              </View>
             )}
 
-            <View style={styles.actionsSpacer} />
-
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={handleCancel}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
+            <TextInput
+              ref={inputRef}
               style={[
-                styles.submitButton,
-                { backgroundColor: accentColor },
-                !comment.trim() && styles.submitButtonDisabled,
+                styles.input,
+                {
+                  backgroundColor: theme.backgroundLight,
+                  borderColor: theme.border,
+                  color: theme.text,
+                },
+                isFocused && { borderColor: accentColor },
               ]}
-              onPress={handleSave}
-              activeOpacity={0.7}
-              disabled={!comment.trim()}
-            >
-              <Text style={styles.submitButtonText}>{submitLabel}</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+              value={comment}
+              onChangeText={setComment}
+              placeholder="What should change?"
+              placeholderTextColor={theme.textDim}
+              multiline
+              numberOfLines={2}
+              textAlignVertical="top"
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              onSubmitEditing={handleSave}
+              blurOnSubmit={false}
+            />
+
+            <View style={styles.actions}>
+              {isEditMode && onDelete && (
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={handleDelete}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.deleteButtonText, { color: theme.danger }]}>Delete</Text>
+                </TouchableOpacity>
+              )}
+
+              <View style={styles.actionsSpacer} />
+
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleCancel}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.cancelButtonText, { color: theme.cancelText }]}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  { backgroundColor: accentColor },
+                  !comment.trim() && styles.submitButtonDisabled,
+                ]}
+                onPress={handleSave}
+                activeOpacity={0.7}
+                disabled={!comment.trim()}
+              >
+                <Text style={styles.submitButtonText}>{submitLabel}</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
         </View>
       </KeyboardAvoidingView>
     </>
@@ -290,7 +328,6 @@ export function AnnotationPopup(props: ExtendedPopupProps) {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     zIndex: 999,
   },
   keyboardAvoid: {
@@ -300,7 +337,6 @@ const styles = StyleSheet.create({
   popup: {
     position: 'absolute',
     width: 280,
-    backgroundColor: COLORS.background,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -309,7 +345,6 @@ const styles = StyleSheet.create({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
         shadowRadius: 24,
       },
       android: {
@@ -317,7 +352,6 @@ const styles = StyleSheet.create({
       },
     }),
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
 
   header: {
@@ -326,11 +360,9 @@ const styles = StyleSheet.create({
   elementName: {
     fontSize: 12,
     fontWeight: '500',
-    color: COLORS.textMuted,
   },
 
   quote: {
-    backgroundColor: COLORS.backgroundLight,
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 6,
@@ -339,24 +371,17 @@ const styles = StyleSheet.create({
   quoteText: {
     fontSize: 11,
     fontStyle: 'italic',
-    color: COLORS.textQuote,
     lineHeight: 16,
   },
 
   input: {
-    backgroundColor: COLORS.backgroundLight,
     borderWidth: 1,
-    borderColor: COLORS.border,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: 13,
-    color: COLORS.text,
     minHeight: 56,
     maxHeight: 120,
-  },
-  inputFocused: {
-    borderColor: COLORS.borderFocus,
   },
 
   actions: {
@@ -379,7 +404,6 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 12,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
 
   deleteButton: {
@@ -390,14 +414,12 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 12,
     fontWeight: '500',
-    color: COLORS.danger,
   },
 
   submitButton: {
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: COLORS.accent,
   },
   submitButtonDisabled: {
     opacity: 0.4,

@@ -148,6 +148,8 @@ export function Agentation({
   const [settings, setSettings] = useState<AgenationSettings>(DEFAULT_SETTINGS);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [showMarkers, setShowMarkers] = useState(true);
   const contentRef = useRef<View>(null);
 
   // MCP sync (only active when endpoint provided)
@@ -223,6 +225,10 @@ export function Agentation({
     setIsSettingsMenuOpen(isOpen);
   }, []);
 
+  const handleShowMarkersChange = useCallback((show: boolean) => {
+    setShowMarkers(show);
+  }, []);
+
   // Callback for useAgentationScroll hook to report scroll position
   const reportScrollOffset = useCallback((x: number, y: number) => {
     setScrollOffset({ x, y });
@@ -233,7 +239,9 @@ export function Agentation({
     reportScrollOffset,
     scrollOffset,
     isAnnotationMode,
-  }), [reportScrollOffset, scrollOffset, isAnnotationMode]);
+    isDarkMode,
+    setIsDarkMode,
+  }), [reportScrollOffset, scrollOffset, isAnnotationMode, isDarkMode]);
 
   // Update current route periodically (navigation listener would be better but requires more integration)
   const updateCurrentRoute = useCallback(() => {
@@ -319,6 +327,10 @@ export function Agentation({
       } else {
         onAnnotationModeDisabled?.();
         setSelectedAnnotation(null);
+        // Close popup when toolbar closes
+        setPopupVisible(false);
+        setPendingTap(null);
+        setPendingDetection(null);
       }
       return newMode;
     });
@@ -488,21 +500,23 @@ export function Agentation({
             />
           )}
 
-          <View style={styles.markersContainer} pointerEvents="box-none">
-            {visibleAnnotations.map((annotation, index) => (
-              <AnnotationMarker
-                key={annotation.id}
-                annotation={annotation}
-                index={index}
-                isSelected={selectedAnnotation?.id === annotation.id}
-                onPress={() => handleMarkerPress(annotation)}
-                onEdit={handleMarkerEdit}
-                onDelete={handleMarkerDelete}
-                scrollOffset={scrollOffset}
-                color={settings.annotationColor}
-              />
-            ))}
-          </View>
+          {showMarkers && (
+            <View style={styles.markersContainer} pointerEvents="box-none">
+              {visibleAnnotations.map((annotation, index) => (
+                <AnnotationMarker
+                  key={annotation.id}
+                  annotation={annotation}
+                  index={index}
+                  isSelected={selectedAnnotation?.id === annotation.id}
+                  onPress={() => handleMarkerPress(annotation)}
+                  onEdit={handleMarkerEdit}
+                  onDelete={handleMarkerDelete}
+                  scrollOffset={scrollOffset}
+                  color={settings.annotationColor}
+                />
+              ))}
+            </View>
+          )}
 
           <AnnotationPopup
             annotation={selectedAnnotation}
@@ -515,6 +529,7 @@ export function Agentation({
             toolbarHeight={toolbarHeight}
             settingsMenuHeight={isSettingsMenuOpen ? 140 : 0}
             accentColor={settings.annotationColor}
+            isDarkMode={isDarkMode}
           />
 
           {/* Render selected marker above popup when editing */}
@@ -547,6 +562,9 @@ export function Agentation({
             clearAfterCopy={settings.clearAfterCopy}
             onClearAfterCopyChange={handleClearAfterCopyChange}
             onSettingsMenuChange={handleSettingsMenuChange}
+            // Markers visibility toggle
+            showMarkers={showMarkers}
+            onShowMarkersChange={handleShowMarkersChange}
             // Pause button (only shown if plugin provides it)
             showPauseButton={hasPausePlugin}
             isPaused={isPaused}

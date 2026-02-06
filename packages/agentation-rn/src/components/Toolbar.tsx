@@ -386,7 +386,7 @@ export function Toolbar(props: ToolbarProps) {
                 onPress={handleClearAfterCopyToggle}
                 activeOpacity={0.7}
               >
-                <Text style={styles.settingsLabel}>Clear After Copy</Text>
+                <Text style={styles.settingsLabel}>Clear on copy/send</Text>
                 <View style={[styles.checkbox, currentClearAfterCopy && styles.checkboxChecked]}>
                   {currentClearAfterCopy && <Text style={styles.checkmark}>✓</Text>}
                 </View>
@@ -439,7 +439,7 @@ export function Toolbar(props: ToolbarProps) {
                 activeOpacity={0.7}
               >
                 <IconChevronLeft size={16} color="#FFFFFF" />
-                <Text style={styles.settingsBackText}>Automations</Text>
+                <Text style={styles.settingsBackText}>MCP & Webhooks</Text>
               </TouchableOpacity>
 
               {/* MCP Connection Row */}

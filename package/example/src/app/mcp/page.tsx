@@ -167,8 +167,8 @@ npx agentation-mcp help      # Show help`}
                 <td style={{ padding: "0.375rem 0", borderBottom: "1px solid rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.6)" }}>Add a reply to an annotation thread</td>
               </tr>
               <tr>
-                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem" }}>agentation_wait_for_action</td>
-                <td style={{ padding: "0.375rem 0", color: "rgba(0,0,0,0.6)" }}>Block until user clicks &ldquo;Send to Agent&rdquo;</td>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem" }}>agentation_watch_annotations</td>
+                <td style={{ padding: "0.375rem 0", color: "rgba(0,0,0,0.6)" }}>Block until new annotations appear, then return batch</td>
               </tr>
             </tbody>
           </table>
@@ -237,12 +237,43 @@ npx agentation-mcp help      # Show help`}
             updates to the human. Input: <code>annotationId</code>, <code>message</code>
           </p>
 
-          <ToolName>agentation_wait_for_action</ToolName>
+          <ToolName>agentation_watch_annotations</ToolName>
           <p style={{ fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)" }}>
-            Block until the user clicks &ldquo;Send to Agent&rdquo; in the browser. Returns the action request
-            with all annotations and formatted output. Use this to receive push-like notifications instead
-            of polling. Input: optional <code>sessionId</code>, optional <code>timeoutSeconds</code> (default: 60, max: 300)
+            Block until new annotations appear, then collect a batch and return them. Triggers automatically
+            when annotations are created &mdash; the user just annotates in the browser and the agent picks them up.
+            After detecting the first new annotation, waits for a batch window to collect more before returning.
+            Use in a loop for hands-free feedback processing.
+            Input: optional <code>sessionId</code>, optional <code>batchWindowSeconds</code> (default: 10, max: 60),
+            optional <code>timeoutSeconds</code> (default: 120, max: 300)
           </p>
+        </section>
+
+        <section>
+          <h2 id="hands-free-mode">Hands-Free Mode</h2>
+          <p>
+            Use <code>agentation_watch_annotations</code> in a loop for automatic feedback
+            processing &mdash; the agent automatically picks up new annotations as they&apos;re created:
+          </p>
+          <ol style={{ fontSize: "0.8125rem", color: "rgba(0,0,0,0.65)", marginTop: "0.5rem" }}>
+            <li>Agent calls <code>agentation_watch_annotations</code> (blocks until annotations appear)</li>
+            <li>Annotations arrive &mdash; agent receives batch after collection window</li>
+            <li>Agent processes each annotation:
+              <ul>
+                <li><code>agentation_acknowledge</code> &mdash; mark as seen</li>
+                <li>Make code changes</li>
+                <li><code>agentation_resolve</code> &mdash; mark as done (annotation disappears from browser)</li>
+              </ul>
+            </li>
+            <li>Agent calls <code>agentation_watch_annotations</code> again (loop)</li>
+          </ol>
+          <CodeBlock
+            language="markdown"
+            copyable
+            code={`# Example CLAUDE.md instructions
+When I say "watch mode", call agentation_watch_annotations in a loop.
+For each annotation: acknowledge it, make the fix, then resolve it with a summary.
+Continue watching until I say stop or timeout is reached.`}
+          />
         </section>
 
         <section>

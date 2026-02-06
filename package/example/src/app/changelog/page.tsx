@@ -30,6 +30,18 @@ function isMajorVersion(version: string): boolean {
 
 const releases: Release[] = [
   {
+    version: "2.1.0",
+    date: "February 5, 2026",
+    changes: [
+      { type: "added", text: <><a href="/mcp#hands-free-mode" className="styled-link">Hands-free mode</a> — <code>watch_annotations</code> tool blocks until new annotations appear, then returns a batch for the agent to process in a loop</> },
+      { type: "added", text: <>Keyboard shortcut <code>Cmd+Shift+F</code> / <code>Ctrl+Shift+F</code> to toggle feedback mode</> },
+      { type: "added", text: "Resolved annotations now animate out of the browser UI in real time via Server-Sent Events" },
+      { type: "fixed", text: "Production builds no longer health-check localhost:4747 on every page load" },
+      { type: "fixed", text: "MCP tools no longer hang indefinitely if the SSE connection drops" },
+      { type: "removed", text: <><code>wait_for_action</code> MCP tool — unused and superseded by <code>watch_annotations</code></> },
+    ],
+  },
+  {
     version: "2.0.0",
     date: "February 5, 2026",
     summary: "The shift from \"annotate, copy, paste\" to \"annotate and collaborate.\" Agents now see your annotations directly. This update adds MCP server integration, webhooks, React component detection, Shadow DOM support, and much more.",

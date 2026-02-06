@@ -15,5 +15,9 @@ export function ToolbarProvider() {
 
   if (isMobile) return null;
 
-  return <Agentation endpoint="http://localhost:4747" />;
+  const endpoint = process.env.NODE_ENV === "development"
+    ? "http://localhost:4747"
+    : undefined;
+
+  return <Agentation endpoint={endpoint} />;
 }

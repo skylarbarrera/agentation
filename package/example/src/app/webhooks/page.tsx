@@ -50,7 +50,7 @@ function App() {
           />
           <p style={{ marginTop: "0.75rem", fontSize: "0.8125rem", color: "rgba(0,0,0,0.55)" }}>
             With a webhook URL configured, you have two options: enable Auto-Send to fire events automatically,
-            or use the "Send to Agent" button in the toolbar manually. When Auto-Send is on, the toolbar button
+            or click &quot;Send Annotations&quot; in the toolbar manually. When Auto-Send is on, the toolbar button
             is hidden.
           </p>
         </section>
@@ -65,7 +65,7 @@ function App() {
             <li><code>annotation.delete</code> &mdash; Annotation deleted</li>
             <li><code>annotation.update</code> &mdash; Annotation comment edited</li>
             <li><code>annotations.clear</code> &mdash; All annotations cleared</li>
-            <li><code>submit</code> &mdash; "Send to Agent" clicked</li>
+            <li><code>submit</code> &mdash; &quot;Send Annotations&quot; clicked</li>
           </ul>
         </section>
 

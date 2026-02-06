@@ -1,4 +1,4 @@
-<img src="./logo.svg" alt="Agentation" width="50" />
+<img src="https://raw.githubusercontent.com/benjitaylor/agentation/main/package/logo.svg" alt="Agentation" width="50" />
 
 [![npm version](https://img.shields.io/npm/v/agentation)](https://www.npmjs.com/package/agentation)
 [![downloads](https://img.shields.io/npm/dm/agentation)](https://www.npmjs.com/package/agentation)
@@ -49,7 +49,7 @@ The toolbar appears in the bottom-right corner. Click to activate, then click an
 | `onAnnotationUpdate` | `(annotation: Annotation) => void` | - | Called when an annotation is edited |
 | `onAnnotationsClear` | `(annotations: Annotation[]) => void` | - | Called when all annotations are cleared |
 | `onCopy` | `(markdown: string) => void` | - | Callback with markdown output when copy is clicked |
-| `onSubmit` | `(output: string, annotations: Annotation[]) => void` | - | Called when "Send to Agent" is clicked |
+| `onSubmit` | `(output: string, annotations: Annotation[]) => void` | - | Called when "Send Annotations" is clicked |
 | `copyToClipboard` | `boolean` | `true` | Set to false to prevent writing to clipboard |
 | `endpoint` | `string` | - | Server URL for Agent Sync (e.g., `"http://localhost:4747"`) |
 | `sessionId` | `string` | - | Pre-existing session ID to join |

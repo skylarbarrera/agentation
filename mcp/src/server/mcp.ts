@@ -118,11 +118,6 @@ const GetSessionSchema = z.object({
   sessionId: z.string().describe("The session ID to get"),
 });
 
-const WaitForActionSchema = z.object({
-  sessionId: z.string().optional().describe("Optional session ID to filter events. If not provided, waits for action on ANY session."),
-  timeoutSeconds: z.number().optional().default(60).describe("Timeout in seconds (default: 60, max: 300)"),
-});
-
 const WatchAnnotationsSchema = z.object({
   sessionId: z.string().optional().describe("Optional session ID to filter. If not provided, watches ALL sessions."),
   batchWindowSeconds: z.number().optional().default(10).describe("Seconds to wait after first annotation before returning batch (default: 10, max: 60)"),
@@ -255,31 +250,12 @@ export const TOOLS = [
     },
   },
   {
-    name: "agentation_wait_for_action",
-    description:
-      "Block until the user clicks 'Send to Agent' in the browser. Returns the action request with all annotations and formatted output. Use this to receive push-like notifications instead of polling. The tool will block until an action is requested or timeout is reached.",
-    inputSchema: {
-      type: "object" as const,
-      properties: {
-        sessionId: {
-          type: "string",
-          description: "Optional session ID to filter. If not provided, waits for action on ANY session.",
-        },
-        timeoutSeconds: {
-          type: "number",
-          description: "Timeout in seconds (default: 60, max: 300)",
-        },
-      },
-      required: [],
-    },
-  },
-  {
     name: "agentation_watch_annotations",
     description:
       "Block until new annotations appear, then collect a batch and return them. " +
-      "Unlike wait_for_action (which requires the user to click 'Send to Agent'), this triggers " +
-      "automatically when annotations are created. After detecting the first new annotation, waits " +
-      "for a batch window to collect more before returning. Use in a loop for hands-free processing. " +
+      "Triggers automatically when annotations are created — the user just annotates in the browser " +
+      "and the agent picks them up. After detecting the first new annotation, waits for a batch window " +
+      "to collect more before returning. Use in a loop for hands-free processing. " +
       "After addressing each annotation, call agentation_resolve with the annotation ID and a summary " +
       "of what you did. Only resolve annotations the user accepted — if the user rejects your change, " +
       "leave the annotation open.",
@@ -362,119 +338,6 @@ export function error(message: string): ToolResult {
 }
 
 /**
- * Result from waitForActionEvent with error details
- */
-type WaitResult =
-  | { type: "action"; payload: ActionRequest }
-  | { type: "timeout" }
-  | { type: "error"; message: string };
-
-/**
- * Wait for an action.requested event via SSE from the HTTP server.
- * Returns the ActionRequest payload, timeout, or error details.
- *
- * This uses SSE instead of in-memory eventBus so it works when MCP server
- * runs as a separate process from the HTTP server (--mcp-only mode).
- */
-function waitForActionEvent(
-  sessionId: string | undefined,
-  timeoutMs: number
-): Promise<WaitResult> {
-  return new Promise((resolve) => {
-    let aborted = false;
-    const controller = new AbortController();
-
-    const cleanup = () => {
-      aborted = true;
-      controller.abort();
-    };
-
-    // Set timeout
-    const timeoutId = setTimeout(() => {
-      cleanup();
-      resolve({ type: "timeout" });
-    }, timeoutMs);
-
-    // Connect to SSE endpoint with agent=true to be counted as an agent listener
-    const sseUrl = sessionId
-      ? `${httpBaseUrl}/sessions/${sessionId}/events?agent=true`
-      : `${httpBaseUrl}/events?agent=true`;
-
-    const sseHeaders: Record<string, string> = { Accept: "text/event-stream" };
-    if (apiKey) {
-      sseHeaders["x-api-key"] = apiKey;
-    }
-    fetch(sseUrl, {
-      signal: controller.signal,
-      headers: sseHeaders,
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          clearTimeout(timeoutId);
-          cleanup();
-          resolve({ type: "error", message: `HTTP server returned ${res.status}: ${res.statusText}` });
-          return;
-        }
-        if (!res.body) {
-          clearTimeout(timeoutId);
-          cleanup();
-          resolve({ type: "error", message: "No response body from SSE endpoint" });
-          return;
-        }
-
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (!aborted) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const event = JSON.parse(line.slice(6));
-                if (event.type === "action.requested") {
-                  // If filtering by session, check it matches
-                  if (sessionId && event.sessionId !== sessionId) {
-                    continue;
-                  }
-                  clearTimeout(timeoutId);
-                  cleanup();
-                  resolve({ type: "action", payload: event.payload as ActionRequest });
-                  return;
-                }
-              } catch {
-                // Ignore parse errors for individual events
-              }
-            }
-          }
-        }
-      })
-      .catch((err) => {
-        // Connection error or aborted
-        if (!aborted) {
-          clearTimeout(timeoutId);
-          const message = err instanceof Error ? err.message : "Unknown connection error";
-          // Check for common connection errors
-          if (message.includes("ECONNREFUSED") || message.includes("fetch failed")) {
-            resolve({ type: "error", message: `Cannot connect to HTTP server at ${httpBaseUrl}. Is the agentation server running?` });
-          } else if (message.includes("abort")) {
-            // Aborted by timeout - already handled
-            resolve({ type: "timeout" });
-          } else {
-            resolve({ type: "error", message: `Connection error: ${message}` });
-          }
-        }
-      });
-  });
-}
-
-/**
  * Result from watchForAnnotations
  */
 type WatchAnnotationsResult =
@@ -490,8 +353,7 @@ type WatchAnnotationsResult =
  * Initial sync events (sequence 0) are ignored to prevent false triggers
  * from pre-existing pending annotations when the SSE connection opens.
  *
- * This is the "automatic" counterpart to waitForActionEvent -- instead of
- * waiting for an explicit user action, it triggers on any new annotation.
+ * Watches for new annotations via SSE and collects them into a batch.
  */
 function watchForAnnotations(
   sessionId: string | undefined,
@@ -551,7 +413,22 @@ function watchForAnnotations(
 
         while (!aborted) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            if (!aborted) {
+              clearTimeout(timeoutId);
+              cleanup();
+              if (collectedAnnotations.length > 0) {
+                resolve({
+                  type: "annotations",
+                  annotations: collectedAnnotations,
+                  sessions: Array.from(detectedSessions),
+                });
+              } else {
+                resolve({ type: "error", message: "SSE connection closed unexpectedly. The agentation server may have restarted." });
+              }
+            }
+            return;
+          }
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split("\n");
@@ -744,32 +621,6 @@ export async function handleTool(name: string, args: unknown): Promise<ToolResul
           return error(`Annotation not found: ${annotationId}`);
         }
         throw err;
-      }
-    }
-
-    case "agentation_wait_for_action": {
-      const parsed = WaitForActionSchema.parse(args);
-      const sessionId = parsed.sessionId;
-      // Clamp timeout between 1 and 300 seconds
-      const timeoutSeconds = Math.min(300, Math.max(1, parsed.timeoutSeconds ?? 60));
-      const timeoutMs = timeoutSeconds * 1000;
-
-      const result = await waitForActionEvent(sessionId, timeoutMs);
-
-      switch (result.type) {
-        case "action":
-          return success({
-            timeout: false,
-            action: result.payload,
-          });
-        case "timeout":
-          return success({
-            timeout: true,
-            message: `No action requested within ${timeoutSeconds} seconds`,
-            sessionId: sessionId ?? "any",
-          });
-        case "error":
-          return error(result.message);
       }
     }
 

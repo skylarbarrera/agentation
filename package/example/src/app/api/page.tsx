@@ -69,7 +69,7 @@ export default function APIPage() {
                 <code className="prop-name">onSubmit</code>
                 <span className="prop-type">(output: string, annotations: Annotation[]) =&gt; void</span>
               </div>
-              <p className="prop-desc">Called when "Send to Agent" is clicked</p>
+              <p className="prop-desc">Called when &quot;Send Annotations&quot; is clicked</p>
             </div>
             <div className="prop-item">
               <div className="prop-header">
@@ -241,17 +241,6 @@ function App() {
             </tbody>
           </table>
 
-          <h3 style={{ marginTop: "1.25rem" }}>Actions</h3>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.75rem" }}>
-            <tbody>
-              <tr>
-                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem", width: "5rem", color: "rgba(0,0,0,0.4)" }}>POST</td>
-                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem" }}>/sessions/:id/action</td>
-                <td style={{ padding: "0.375rem 0", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Request agent action</td>
-              </tr>
-            </tbody>
-          </table>
-
           <h3 style={{ marginTop: "1.25rem" }}>Events (SSE)</h3>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.75rem" }}>
             <tbody>
@@ -262,8 +251,8 @@ function App() {
               </tr>
               <tr>
                 <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem", color: "rgba(0,0,0,0.4)" }}>GET</td>
-                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem" }}>/events?domain=...</td>
-                <td style={{ padding: "0.375rem 0", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Domain-wide event stream</td>
+                <td style={{ padding: "0.375rem 0", fontFamily: "monospace", fontSize: "0.6875rem" }}>/events</td>
+                <td style={{ padding: "0.375rem 0", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>Global event stream (optionally filter with <code>?domain=...</code>)</td>
               </tr>
             </tbody>
           </table>
@@ -295,7 +284,10 @@ function App() {
             code={`# Session-level: events for a single page
 curl -N http://localhost:4747/sessions/:id/events
 
-# Site-level: events across ALL pages for a domain
+# Global: events across ALL sessions
+curl -N http://localhost:4747/events
+
+# Filtered by domain: events for pages on a specific domain
 curl -N "http://localhost:4747/events?domain=localhost:3001"
 
 # Reconnect after disconnect (replay missed events)
@@ -309,7 +301,7 @@ curl -N -H "Last-Event-ID: 42" http://localhost:4747/sessions/:id/events`}
             <li><code>session.created</code> &mdash; New session started</li>
             <li><code>session.updated</code> &mdash; Session updated</li>
             <li><code>session.closed</code> &mdash; Session closed</li>
-            <li><code>action.requested</code> &mdash; &ldquo;Send to Agent&rdquo; clicked</li>
+            <li><code>action.requested</code> &mdash; Agent action requested</li>
             <li><code>thread.message</code> &mdash; New message in annotation thread</li>
           </ul>
         </section>

@@ -428,6 +428,7 @@ export function SideNav() {
         { id: 'server-options', text: 'Server Options' },
         { id: 'claude-code', text: 'Claude Code' },
         { id: 'mcp-tools', text: 'MCP Tools' },
+        { id: 'hands-free-mode', text: 'Hands-Free Mode' },
         { id: 'types', text: 'TypeScript Types' },
       ],
     },

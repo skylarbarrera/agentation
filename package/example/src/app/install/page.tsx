@@ -441,7 +441,7 @@ function App() {
                   <code>onSubmit</code>
                 </td>
                 <td style={{ padding: "0.5rem 0", color: "rgba(0,0,0,0.5)", textAlign: "right" }}>
-                  Fired when &quot;Send to Agent&quot; is clicked
+                  Fired when &quot;Send Annotations&quot; is clicked
                 </td>
               </tr>
             </tbody>

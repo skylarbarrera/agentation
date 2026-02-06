@@ -71,7 +71,6 @@ The MCP server exposes these tools to AI agents:
 | `agentation_resolve` | Mark an annotation as resolved |
 | `agentation_dismiss` | Dismiss an annotation with a reason |
 | `agentation_reply` | Add a reply to an annotation thread |
-| `agentation_wait_for_action` | Block until user clicks "Send to Agent" |
 | `agentation_watch_annotations` | Block until new annotations appear, then return batch |
 
 ## HTTP API
@@ -91,9 +90,6 @@ The HTTP server provides a REST API for the browser toolbar:
 - `GET /sessions/:id/pending` - Get pending annotations
 - `GET /pending` - Get all pending annotations
 
-### Actions
-- `POST /sessions/:id/action` - Request agent action
-
 ### Events (SSE)
 - `GET /sessions/:id/events` - Session event stream
 - `GET /events` - Global event stream (optionally filter with `?domain=...`)
@@ -104,7 +100,7 @@ The HTTP server provides a REST API for the browser toolbar:
 
 ## Hands-Free Mode
 
-Use `agentation_watch_annotations` in a loop for automatic feedback processing -- no need for the user to click "Send to Agent":
+Use `agentation_watch_annotations` in a loop for automatic feedback processing -- the agent picks up new annotations as they're created:
 
 1. Agent calls `agentation_watch_annotations` (blocks until annotations appear)
 2. Annotations arrive -- agent receives batch after collection window

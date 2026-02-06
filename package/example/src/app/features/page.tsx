@@ -87,7 +87,7 @@ export default function FeaturesPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
           <tbody>
             <tr>
-              <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(0,0,0,0.06)' }}><code>Cmd+Shift+A</code> / <code>Ctrl+Shift+A</code></td>
+              <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(0,0,0,0.06)' }}><code>Cmd+Shift+F</code> / <code>Ctrl+Shift+F</code></td>
               <td style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.5)', textAlign: 'right' }}>Toggle feedback mode</td>
             </tr>
             <tr>

@@ -2832,6 +2832,14 @@ export function PageFeedbackToolbarCSS({
         }
       }
 
+      // Cmd+Shift+F / Ctrl+Shift+F to toggle feedback mode
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === "f" || e.key === "F")) {
+        e.preventDefault();
+        hideTooltipsUntilMouseLeave();
+        setIsActive((prev) => !prev);
+        return;
+      }
+
       // Skip other shortcuts if typing or modifier keys are held
       if (isTyping || e.metaKey || e.ctrlKey) return;
 

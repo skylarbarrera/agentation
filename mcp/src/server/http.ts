@@ -49,7 +49,7 @@ function isCloudMode(): boolean {
 // Track active SSE connections for cleanup
 const sseConnections = new Set<ServerResponse>();
 // Track agent SSE connections separately (for accurate delivery status)
-// These are connections from MCP wait_for_action, not browser toolbars
+// These are connections from MCP tools (e.g. watch_annotations), not browser toolbars
 const agentConnections = new Set<ServerResponse>();
 
 // -----------------------------------------------------------------------------

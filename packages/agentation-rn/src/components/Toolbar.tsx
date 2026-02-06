@@ -8,11 +8,13 @@ import {
   Alert,
   Animated,
   Text,
+  TextInput,
   StyleProp,
   ViewStyle,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IconListSparkle, IconClose, IconCopy, IconTrash, IconGear, IconPlay, IconPause, IconSendArrow, IconWifi, IconWifiOff } from './Icons';
+import { IconListSparkle, IconClose, IconCopy, IconTrash, IconGear, IconPlay, IconPause, IconSendArrow, IconChevronRight, IconChevronLeft } from './Icons';
 import type { OutputDetailLevel, AgenationSettings, ConnectionStatus } from '../types';
 import { DEFAULT_SETTINGS, COLOR_OPTIONS } from '../types';
 import { loadSettings, saveSettings } from '../utils/storage';
@@ -112,8 +114,17 @@ export interface ToolbarProps {
   onSendToAgent?: () => void;
   /** Connection status to MCP server */
   connectionStatus?: ConnectionStatus;
-  /** Show connection status indicator */
-  showConnectionStatus?: boolean;
+  /** MCP endpoint URL (used to show connection section in settings) */
+  mcpEndpoint?: string;
+  // V2 Webhook Props
+  /** Webhook URL for annotation events */
+  webhookUrl?: string;
+  /** Callback when webhook URL changes */
+  onWebhookUrlChange?: (url: string) => void;
+  /** Whether webhooks auto-send is enabled */
+  webhooksEnabled?: boolean;
+  /** Callback when webhooks enabled state changes */
+  onWebhooksEnabledChange?: (enabled: boolean) => void;
 }
 
 export function Toolbar(props: ToolbarProps) {
@@ -139,17 +150,24 @@ export function Toolbar(props: ToolbarProps) {
     showSendToAgent = false,
     onSendToAgent,
     connectionStatus = 'disconnected',
-    showConnectionStatus = false,
+    mcpEndpoint,
+    // V2 Webhook props
+    webhookUrl: controlledWebhookUrl,
+    onWebhookUrlChange,
+    webhooksEnabled: controlledWebhooksEnabled,
+    onWebhooksEnabledChange,
   } = props;
 
   const insets = useSafeAreaInsets();
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [settingsPage, setSettingsPage] = useState<'main' | 'automations'>('main');
   const [internalSettings, setInternalSettings] = useState<AgenationSettings>(DEFAULT_SETTINGS);
 
   const expandAnim = useRef(new Animated.Value(0)).current;
   const settingsAnim = useRef(new Animated.Value(0)).current;
+  const pageSlideAnim = useRef(new Animated.Value(0)).current;
 
   const fabOpacity = expandAnim.interpolate({
     inputRange: [0, 1],
@@ -165,6 +183,8 @@ export function Toolbar(props: ToolbarProps) {
   const currentOutputDetail = controlledOutputDetail ?? internalSettings.outputDetail;
   const currentClearAfterCopy = controlledClearAfterCopy ?? internalSettings.clearAfterCopy;
   const currentAnnotationColor = controlledAnnotationColor ?? internalSettings.annotationColor;
+  const currentWebhookUrl = controlledWebhookUrl ?? internalSettings.webhookUrl ?? '';
+  const currentWebhooksEnabled = controlledWebhooksEnabled ?? internalSettings.webhooksEnabled ?? false;
 
   useEffect(() => {
     loadSettings().then(setInternalSettings);
@@ -185,6 +205,22 @@ export function Toolbar(props: ToolbarProps) {
       useNativeDriver: true,
     }).start();
   }, [showSettingsMenu, settingsAnim]);
+
+  // Animate page slide
+  useEffect(() => {
+    Animated.timing(pageSlideAnim, {
+      toValue: settingsPage === 'automations' ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [settingsPage, pageSlideAnim]);
+
+  // Reset to main page when settings menu closes
+  useEffect(() => {
+    if (!showSettingsMenu) {
+      setSettingsPage('main');
+    }
+  }, [showSettingsMenu]);
 
   const handleFabPress = useCallback(() => {
     if (!isExpanded) {
@@ -262,6 +298,39 @@ export function Toolbar(props: ToolbarProps) {
     }
   }, [currentAnnotationColor, onAnnotationColorChange, internalSettings]);
 
+  const handleWebhookUrlChange = useCallback((url: string) => {
+    if (onWebhookUrlChange) {
+      onWebhookUrlChange(url);
+    } else {
+      const newSettings = { ...internalSettings, webhookUrl: url };
+      setInternalSettings(newSettings);
+      saveSettings({ webhookUrl: url });
+    }
+  }, [onWebhookUrlChange, internalSettings]);
+
+  const handleWebhooksEnabledToggle = useCallback(() => {
+    const newValue = !currentWebhooksEnabled;
+    if (onWebhooksEnabledChange) {
+      onWebhooksEnabledChange(newValue);
+    } else {
+      const newSettings = { ...internalSettings, webhooksEnabled: newValue };
+      setInternalSettings(newSettings);
+      saveSettings({ webhooksEnabled: newValue });
+    }
+  }, [currentWebhooksEnabled, onWebhooksEnabledChange, internalSettings]);
+
+  const handleNavigateToAutomations = useCallback(() => {
+    setSettingsPage('automations');
+  }, []);
+
+  const handleNavigateToMain = useCallback(() => {
+    setSettingsPage('main');
+  }, []);
+
+  const handleLearnMore = useCallback(() => {
+    Linking.openURL('https://github.com/anthropics/agentation');
+  }, []);
+
   const bottomPosition = Math.max(insets.bottom, 16) + 16 + (offset?.y ?? 0);
   const rightPosition = 20 + (offset?.x ?? 0);
 
@@ -280,36 +349,156 @@ export function Toolbar(props: ToolbarProps) {
         pointerEvents={showSettingsMenu ? 'auto' : 'none'}
       >
         <FloatingContainer style={styles.settingsMenu}>
-          <TouchableOpacity
-            style={styles.settingsRow}
-            onPress={handleOutputDetailCycle}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.settingsLabel}>Output Detail</Text>
-            <Text style={styles.settingsValueText}>
-              {DETAIL_LEVEL_LABELS[currentOutputDetail]}
-            </Text>
-          </TouchableOpacity>
+          {/* Two-page container with slide animation */}
+          <View style={styles.settingsPagesContainer}>
+            {/* Main Settings Page */}
+            <Animated.View
+              style={[
+                styles.settingsPage,
+                {
+                  transform: [{
+                    translateX: pageSlideAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, -280],
+                    }),
+                  }],
+                  opacity: pageSlideAnim.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [1, 0.5, 0],
+                  }),
+                },
+              ]}
+              pointerEvents={settingsPage === 'main' ? 'auto' : 'none'}
+            >
+              <TouchableOpacity
+                style={styles.settingsRow}
+                onPress={handleOutputDetailCycle}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.settingsLabel}>Output Detail</Text>
+                <Text style={styles.settingsValueText}>
+                  {DETAIL_LEVEL_LABELS[currentOutputDetail]}
+                </Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.settingsRow}
-            onPress={handleClearAfterCopyToggle}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.settingsLabel}>Clear After Copy</Text>
-            <View style={[styles.checkbox, currentClearAfterCopy && styles.checkboxChecked]}>
-              {currentClearAfterCopy && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.settingsRow}
+                onPress={handleClearAfterCopyToggle}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.settingsLabel}>Clear After Copy</Text>
+                <View style={[styles.checkbox, currentClearAfterCopy && styles.checkboxChecked]}>
+                  {currentClearAfterCopy && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.settingsRow}
-            onPress={handleAnnotationColorCycle}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.settingsLabel}>Marker Color</Text>
-            <View style={[styles.colorSwatch, { backgroundColor: currentAnnotationColor }]} />
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.settingsRow}
+                onPress={handleAnnotationColorCycle}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.settingsLabel}>Marker Color</Text>
+                <View style={[styles.colorSwatch, { backgroundColor: currentAnnotationColor }]} />
+              </TouchableOpacity>
+
+              {/* Navigation to Automations page */}
+              <TouchableOpacity
+                style={[styles.settingsRow, styles.settingsNavRow]}
+                onPress={handleNavigateToAutomations}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.settingsLabel}>Manage MCP & Webhooks</Text>
+                <IconChevronRight size={18} color="rgba(255, 255, 255, 0.55)" />
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* Automations Page */}
+            <Animated.View
+              style={[
+                styles.settingsPage,
+                styles.automationsPage,
+                {
+                  transform: [{
+                    translateX: pageSlideAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [280, 0],
+                    }),
+                  }],
+                  opacity: pageSlideAnim.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [0, 0.5, 1],
+                  }),
+                },
+              ]}
+              pointerEvents={settingsPage === 'automations' ? 'auto' : 'none'}
+            >
+              {/* Back button */}
+              <TouchableOpacity
+                style={styles.settingsBackRow}
+                onPress={handleNavigateToMain}
+                activeOpacity={0.7}
+              >
+                <IconChevronLeft size={16} color="#FFFFFF" />
+                <Text style={styles.settingsBackText}>Automations</Text>
+              </TouchableOpacity>
+
+              {/* MCP Connection Row */}
+              <View style={styles.settingsRow}>
+                <Text style={styles.settingsLabel}>MCP</Text>
+                {mcpEndpoint ? (
+                  <View style={styles.mcpStatusRow}>
+                    <View style={[
+                      styles.statusDot,
+                      connectionStatus === 'connected' && styles.statusDotConnected,
+                      connectionStatus === 'connecting' && styles.statusDotConnecting,
+                    ]} />
+                    <Text style={styles.mcpStatusText}>
+                      {connectionStatus === 'connected' ? 'Connected' :
+                       connectionStatus === 'connecting' ? 'Connecting' : 'Offline'}
+                    </Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity onPress={handleLearnMore}>
+                    <Text style={styles.learnMoreLink}>Setup</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Webhooks Auto-Send Row */}
+              <TouchableOpacity
+                style={styles.settingsRow}
+                onPress={handleWebhooksEnabledToggle}
+                activeOpacity={0.7}
+                disabled={!currentWebhookUrl}
+              >
+                <Text style={[styles.settingsLabel, !currentWebhookUrl && styles.settingsLabelDisabled]}>
+                  Auto-Send
+                </Text>
+                <View style={[
+                  styles.checkbox,
+                  currentWebhooksEnabled && currentWebhookUrl && styles.checkboxChecked,
+                  !currentWebhookUrl && styles.checkboxDisabled,
+                ]}>
+                  {currentWebhooksEnabled && currentWebhookUrl && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+              </TouchableOpacity>
+
+              {/* Webhook URL Input */}
+              <View style={styles.webhookInputRow}>
+                <Text style={styles.settingsLabel}>Webhook URL</Text>
+                <TextInput
+                  style={styles.webhookInput}
+                  placeholder="https://..."
+                  placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                  value={currentWebhookUrl}
+                  onChangeText={handleWebhookUrlChange}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                />
+              </View>
+            </Animated.View>
+          </View>
         </FloatingContainer>
       </Animated.View>
 
@@ -396,19 +585,13 @@ export function Toolbar(props: ToolbarProps) {
 
               <AnimatedButton onPress={handleSettingsPress} style={styles.toolbarButton}>
                 <IconGear size={22} color={iconColor} />
+                {mcpEndpoint && connectionStatus === 'connected' && (
+                  <View style={styles.gearStatusDot} />
+                )}
+                {mcpEndpoint && connectionStatus === 'connecting' && (
+                  <View style={[styles.gearStatusDot, styles.gearStatusDotConnecting]} />
+                )}
               </AnimatedButton>
-
-              {showConnectionStatus && (
-                <View style={styles.connectionIndicator}>
-                  {connectionStatus === 'connected' ? (
-                    <IconWifi size={16} color="#34C759" />
-                  ) : connectionStatus === 'connecting' ? (
-                    <IconWifi size={16} color="#FFD60A" />
-                  ) : (
-                    <IconWifiOff size={16} color="#666" />
-                  )}
-                </View>
-              )}
             </View>
           </FloatingContainer>
 
@@ -531,6 +714,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 4,
     paddingHorizontal: 12,
+    overflow: 'hidden',
+  },
+  settingsPagesContainer: {
+    position: 'relative',
+    minWidth: 220,
+  },
+  settingsPage: {
+    // Main page styles
+  },
+  automationsPage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    minWidth: 220,
   },
   settingsRow: {
     flexDirection: 'row',
@@ -539,10 +737,31 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     minWidth: 170,
   },
+  settingsNavRow: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    marginTop: 4,
+    paddingTop: 14,
+  },
+  settingsBackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginLeft: -4,
+  },
+  settingsBackText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 2,
+  },
   settingsLabel: {
     color: 'rgba(255, 255, 255, 0.55)',
     fontSize: 13,
     fontWeight: '400',
+  },
+  settingsLabelDisabled: {
+    opacity: 0.4,
   },
   settingsValue: {
     paddingHorizontal: 4,
@@ -560,6 +779,59 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '500',
+  },
+  mcpStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#666',
+    marginRight: 6,
+  },
+  statusDotConnected: {
+    backgroundColor: '#34C759',
+  },
+  statusDotConnecting: {
+    backgroundColor: '#FFD60A',
+  },
+  mcpStatusText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+  },
+  learnMoreLink: {
+    color: '#3c82f7',
+    fontSize: 13,
+  },
+  webhookInputRow: {
+    paddingVertical: 8,
+  },
+  webhookInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: '#FFFFFF',
+    fontSize: 12,
+    marginTop: 6,
+  },
+  gearStatusDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#34C759',
+    borderWidth: 1.5,
+    borderColor: '#1a1a1a',
+  },
+  gearStatusDotConnecting: {
+    backgroundColor: '#FFD60A',
   },
   colorSwatch: {
     width: 18,
@@ -579,17 +851,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderColor: '#FFFFFF',
   },
+  checkboxDisabled: {
+    opacity: 0.4,
+  },
   checkmark: {
     color: '#1a1a1a',
     fontSize: 12,
     fontWeight: '600',
     marginTop: -1,
-  },
-  connectionIndicator: {
-    marginLeft: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 24,
-    height: 24,
   },
 });

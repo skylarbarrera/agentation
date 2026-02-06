@@ -23,6 +23,7 @@ import { useAnnotations } from '../hooks/useAnnotations';
 import { useAgentationSync } from '../hooks/useAgentationSync';
 import { generateId, getTimestamp } from '../utils/helpers';
 import { detectComponentAtPoint } from '../utils/componentDetection';
+import { generateMarkdown } from '../utils/markdownGeneration';
 import { Toolbar } from './Toolbar';
 import { AnnotationMarker } from './AnnotationMarker';
 import { AnnotationPopup } from './AnnotationPopup';
@@ -203,6 +204,18 @@ export function Agentation({
     const newSettings = { ...settings, outputDetail: level };
     setSettings(newSettings);
     saveSettings({ outputDetail: level });
+  }, [settings]);
+
+  const handleWebhookUrlChange = useCallback((url: string) => {
+    const newSettings = { ...settings, webhookUrl: url };
+    setSettings(newSettings);
+    saveSettings({ webhookUrl: url });
+  }, [settings]);
+
+  const handleWebhooksEnabledChange = useCallback((enabled: boolean) => {
+    const newSettings = { ...settings, webhooksEnabled: enabled };
+    setSettings(newSettings);
+    saveSettings({ webhooksEnabled: enabled });
   }, [settings]);
 
   const handleSettingsMenuChange = useCallback((isOpen: boolean) => {
@@ -391,6 +404,13 @@ export function Agentation({
     }
   }, [copyMarkdown, settings.outputDetail, settings.clearAfterCopy, clearAll]);
 
+  // Send annotations to agent via MCP endpoint
+  const handleSendToAgent = useCallback(async () => {
+    if (!endpoint || annotations.length === 0) return;
+    const { content } = generateMarkdown(annotations, currentRoute || storageKey, settings.outputDetail);
+    await sendToAgent(annotations, content);
+  }, [endpoint, annotations, currentRoute, storageKey, settings.outputDetail, sendToAgent]);
+
   // Wrap clearAll to call onAnnotationsClear callback
   const handleClearAll = useCallback(() => {
     if (onAnnotationsClear) {
@@ -505,7 +525,16 @@ export function Agentation({
             isPaused={isPaused}
             onPauseToggle={handlePauseToggle}
             // MCP connection status (only when endpoint provided)
+            mcpEndpoint={endpoint}
             connectionStatus={endpoint ? connectionStatus : undefined}
+            // Send to Agent button (only when endpoint provided)
+            showSendToAgent={!!endpoint}
+            onSendToAgent={endpoint ? handleSendToAgent : undefined}
+            // Webhook settings
+            webhookUrl={settings.webhookUrl}
+            onWebhookUrlChange={handleWebhookUrlChange}
+            webhooksEnabled={settings.webhooksEnabled}
+            onWebhooksEnabledChange={handleWebhooksEnabledChange}
           />
         </>
       </View>

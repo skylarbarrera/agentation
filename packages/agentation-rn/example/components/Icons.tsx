@@ -1,3 +1,7 @@
+/**
+ * Icon Components - Inline SVGs for Quick Start
+ * @author @skylarbarrera
+ */
 
 import React from 'react';
 import Svg, { Path } from 'react-native-svg';

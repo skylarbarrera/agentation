@@ -836,6 +836,16 @@ export interface AgenationSettings {
 
   /** Custom markdown template */
   markdownTemplate?: string;
+
+  // ==========================================================================
+  // V2 Webhook Settings (Web Parity)
+  // ==========================================================================
+
+  /** Webhook URL for annotation events */
+  webhookUrl?: string;
+
+  /** Whether webhooks auto-send is enabled */
+  webhooksEnabled?: boolean;
 }
 
 /**

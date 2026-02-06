@@ -5,11 +5,14 @@ const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, '../../..');
 const libraryRoot = path.resolve(projectRoot, '..');
 const librarySrc = path.resolve(libraryRoot, 'src');
+// External linked package
+const reanimatedPauseStateRoot = path.resolve(monorepoRoot, '../../reanimated-pause-state');
+const pluginReanimatedRoot = path.resolve(monorepoRoot, 'plugins/plugin-reanimated');
 
 const config = getDefaultConfig(projectRoot);
 
-// Watch library and monorepo for hot reload
-config.watchFolders = [libraryRoot, monorepoRoot];
+// Watch library, monorepo, and external packages for hot reload
+config.watchFolders = [libraryRoot, monorepoRoot, reanimatedPauseStateRoot, pluginReanimatedRoot];
 
 // Resolve from monorepo root first to avoid duplicate React
 config.resolver.nodeModulesPaths = [
@@ -29,6 +32,22 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (moduleName === 'agentation-rn') {
     return {
       filePath: path.resolve(librarySrc, 'index.ts'),
+      type: 'sourceFile',
+    };
+  }
+
+  // Resolve reanimated-pause-state from external location
+  if (moduleName === 'reanimated-pause-state') {
+    return {
+      filePath: path.resolve(reanimatedPauseStateRoot, 'dist/index.js'),
+      type: 'sourceFile',
+    };
+  }
+
+  // Resolve @agentation/plugin-reanimated from workspace
+  if (moduleName === '@agentation/plugin-reanimated') {
+    return {
+      filePath: path.resolve(pluginReanimatedRoot, 'dist/index.js'),
       type: 'sourceFile',
     };
   }

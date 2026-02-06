@@ -359,6 +359,64 @@ export function IconWifiOff({ size = 24, color = 'currentColor' }: IconProps) {
   );
 }
 
+/**
+ * Chevron right icon (for navigation)
+ */
+export function IconChevronRight({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="›" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9 6L15 12L9 18"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/**
+ * Chevron left icon (for back navigation)
+ */
+export function IconChevronLeft({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="‹" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M15 6L9 12L15 18"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/**
+ * Question mark/help icon (for tooltips)
+ */
+export function IconHelp({ size = 24, color = 'currentColor' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="?" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={9.25} stroke={color} strokeWidth={1.5} />
+      <Path
+        d="M10 10C10 8.89543 10.8954 8 12 8C13.1046 8 14 8.89543 14 10C14 10.8291 13.4977 11.5418 12.7654 11.8516C12.3229 12.0366 12 12.4477 12 12.9293V13"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+      <Circle cx={12} cy={16} r={1} fill={color} />
+    </Svg>
+  );
+}
+
 const styles = StyleSheet.create({
   emojiContainer: {
     justifyContent: 'center',

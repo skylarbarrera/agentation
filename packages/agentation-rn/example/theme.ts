@@ -1,3 +1,16 @@
+/**
+ * Agentation Design System
+ * Ported from web agentation repo
+ *
+ * Key characteristics:
+ * - Minimalist, clean aesthetic
+ * - Dark-first UI (#1a1a1a)
+ * - Soft colors, subtle borders
+ * - Rounded corners (6-16px)
+ * - Smooth spring animations
+ *
+ * @author @skylarbarrera
+ */
 
 export const colors = {
   // Primary actions
@@ -49,7 +62,39 @@ export const radius = {
   lg: 8,
   xl: 12,
   xxl: 16,
+  // Toolbar-specific (from web SCSS)
+  toolbar: 24, // 1.5rem - expanded toolbar
+  toolbarCollapsed: 22, // collapsed toolbar circle
+  popup: 16, // annotation popup
   pill: 999,
+};
+
+// Sizing constants (from web SCSS)
+export const sizing = {
+  // Toolbar dimensions
+  toolbarHeight: 44,
+  toolbarWidthCollapsed: 44,
+  toolbarWidthExpanded: 257,
+  toolbarWidthWithMcp: 297, // When MCP connection shown
+
+  // Button dimensions
+  buttonSize: 34,
+  buttonSizeSmall: 28,
+
+  // Marker dimensions
+  markerSize: 22,
+  markerMultiSelectSize: 26,
+
+  // Popup dimensions
+  popupWidth: 280,
+  popupMaxHeight: 400,
+
+  // Badge dimensions
+  badgeHeight: 18,
+  badgeMinWidth: 18,
+
+  // Settings panel
+  settingsPanelWidth: 240,
 };
 
 export const typography = {
@@ -99,6 +144,24 @@ export const shadows = {
     shadowRadius: 16,
     elevation: 5,
   },
+  // Component-specific shadows (approximating web's multi-layer shadows)
+  // Web: 0 2px 8px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.1)
+  toolbar: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  // Web: 0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08)
+  popup: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  // Web: 0 2px 6px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(0,0,0,0.04)
   marker: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -123,7 +186,87 @@ export const animations = {
     normal: 200,
     slow: 300,
   },
+  // Web animation durations (from SCSS)
+  durations: {
+    toolbarEnter: 500,
+    toolbarExpand: 400,
+    markerIn: 250,
+    markerOut: 200,
+    popupEnter: 200,
+    popupExit: 150,
+    shake: 250,
+    badgeEnter: 300, // + 400ms delay
+    settingsPanel: 200,
+  },
+  // Web easing curves (cubic-bezier) - use with Reanimated's Easing.bezier()
+  // Example: Easing.bezier(0.34, 1.2, 0.64, 1)
+  easings: {
+    // Bouncy entrance - cubic-bezier(0.34, 1.2, 0.64, 1)
+    bouncy: [0.34, 1.2, 0.64, 1] as const,
+    // Super bouncy (popup) - cubic-bezier(0.34, 1.56, 0.64, 1)
+    superBouncy: [0.34, 1.56, 0.64, 1] as const,
+    // Smooth entrance - cubic-bezier(0.22, 1, 0.36, 1)
+    smooth: [0.22, 1, 0.36, 1] as const,
+    // Chevron rotation - cubic-bezier(0.16, 1, 0.3, 1)
+    chevron: [0.16, 1, 0.3, 1] as const,
+    // Expo out - cubic-bezier(0.19, 1, 0.22, 1)
+    expoOut: [0.19, 1, 0.22, 1] as const,
+  },
 };
+
+/**
+ * ANIMATION STATUS (using React Native core Animated API)
+ *
+ * ✅ IMPLEMENTED:
+ *
+ * 1. popupEnter - Scale + slide + opacity
+ *    Web: scale(0.95) translateY(4px) → scale(1) translateY(0), 200ms
+ *    RN: ✅ Animated.parallel([scale, translateY, opacity]), 200ms
+ *    Location: AnnotationPopup.tsx:71-87
+ *
+ * 2. buttonPress - Spring scale feedback
+ *    Web: scale(0.92) on :active
+ *    RN: ✅ Animated.spring scale(0.9), friction 5
+ *    Location: Toolbar.tsx:56-73 (AnimatedButton)
+ *
+ * 3. toolbarExpand - Expand/collapse transition
+ *    RN: ✅ Animated.timing, 200ms
+ *    Location: Toolbar.tsx:174-178
+ *
+ * 4. settingsPanel - Show/hide transition
+ *    RN: ✅ Animated.timing, 150ms
+ *    Location: Toolbar.tsx:182-185
+ *
+ * ⚠️ PARTIAL:
+ *
+ * 5. markerIn - Entrance animation
+ *    Web: scale(0.3) → scale(1), 250ms smooth easing
+ *    RN: ⚠️ Only opacity fade 200ms (missing scale)
+ *    Location: AnnotationMarker.tsx:58-62
+ *    TODO: Add scale animation to match web
+ *
+ * ❌ NOT IMPLEMENTED:
+ *
+ * 6. toolbarEnter - Dramatic first-load entrance
+ *    Web: scale(0.5) rotate(90deg) → scale(1) rotate(0deg), 500ms bouncy
+ *    RN: ❌ No entrance animation
+ *    TODO: Animated.parallel([rotate, scale]) on mount
+ *
+ * 7. shake - Error feedback
+ *    Web: translateX oscillation (-3px, 3px, -2px, 2px), 250ms
+ *    RN: ❌ Not implemented
+ *    TODO: Animated.sequence of translateX values
+ *
+ * 8. scaleIn (badge) - Badge entrance with delay
+ *    Web: scale(0.85) → scale(1), 300ms + 400ms delay
+ *    RN: ❌ Not implemented
+ *    TODO: setTimeout + Animated.spring
+ *
+ * PLATFORM LIMITATIONS (cannot implement):
+ * - Multi-layer shadows (iOS/Android only support single shadow)
+ * - Inset shadows (not supported in RN)
+ * - CSS blend modes on shadows
+ */
 
 // Common component styles
 export const componentStyles = {
@@ -157,11 +300,11 @@ export const componentStyles = {
     borderColor: colors.light.borderMedium,
   },
 
-  // Icon buttons (toolbar style)
+  // Icon buttons (toolbar style) - uses sizing.buttonSize (34)
   iconButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: sizing.buttonSize,
+    height: sizing.buttonSize,
+    borderRadius: sizing.buttonSize / 2,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
   },
@@ -177,11 +320,11 @@ export const componentStyles = {
     fontSize: typography.sizes.body,
   },
 
-  // Badges
+  // Badges - uses sizing.badgeHeight (18)
   badge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    minWidth: sizing.badgeMinWidth,
+    height: sizing.badgeHeight,
+    borderRadius: sizing.badgeHeight / 2,
     paddingHorizontal: 5,
     backgroundColor: colors.primary,
     justifyContent: 'center' as const,
@@ -192,12 +335,54 @@ export const componentStyles = {
     fontSize: typography.sizes.tiny,
     fontWeight: typography.weights.semibold,
   },
+
+  // Marker styles
+  marker: {
+    width: sizing.markerSize,
+    height: sizing.markerSize,
+    borderRadius: sizing.markerSize / 2,
+    backgroundColor: colors.primary,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    ...shadows.marker,
+  },
+  markerMultiSelect: {
+    width: sizing.markerMultiSelectSize,
+    height: sizing.markerMultiSelectSize,
+    borderRadius: sizing.markerMultiSelectSize / 2,
+  },
+
+  // Popup styles
+  popup: {
+    width: sizing.popupWidth,
+    maxHeight: sizing.popupMaxHeight,
+    borderRadius: radius.popup,
+    ...shadows.popup,
+  },
+
+  // Toolbar styles
+  toolbar: {
+    height: sizing.toolbarHeight,
+    borderRadius: radius.toolbar,
+    ...shadows.toolbar,
+  },
+  toolbarCollapsed: {
+    width: sizing.toolbarWidthCollapsed,
+    height: sizing.toolbarHeight,
+    borderRadius: radius.toolbarCollapsed,
+  },
+  toolbarExpanded: {
+    width: sizing.toolbarWidthExpanded,
+    height: sizing.toolbarHeight,
+    borderRadius: radius.toolbar,
+  },
 };
 
 export default {
   colors,
   spacing,
   radius,
+  sizing,
   typography,
   shadows,
   animations,

@@ -1,3 +1,9 @@
+/**
+ * ScrollView Example
+ * Demonstrates useAgentationScroll hook for scroll-aware annotations
+ *
+ * @author @skylarbarrera
+ */
 
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';

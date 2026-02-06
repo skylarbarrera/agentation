@@ -1,3 +1,9 @@
+/**
+ * Modal Example
+ * Demonstrates AgenationView for annotation support inside modals
+ *
+ * @author @skylarbarrera
+ */
 
 import React, { useState } from 'react';
 import {

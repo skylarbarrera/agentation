@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import type { AnnotationMarkerProps, Annotation } from '../types';
 
-interface MarkerProps extends Omit<AnnotationMarkerProps, 'annotation' | 'index' | 'onPress'> {
+interface MarkerProps extends Omit<AnnotationMarkerProps, 'annotation' | 'index' | 'onPress' | 'onLongPress'> {
   annotation?: Annotation;
   index?: number;
   isPending?: boolean;
@@ -35,8 +35,7 @@ export function AnnotationMarker(props: (AnnotationMarkerProps & {
   skipEntryAnimation?: boolean;
   color?: string;
 }) | MarkerProps) {
-  const { isSelected, onPress } = props;
-  const onLongPress = 'onLongPress' in props ? props.onLongPress : undefined;
+  const { isSelected, onPress, onLongPress } = props;
 
   const isPending = 'isPending' in props ? props.isPending : false;
   const x = 'x' in props ? props.x : props.annotation.x;

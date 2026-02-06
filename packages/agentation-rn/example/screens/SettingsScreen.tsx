@@ -1,3 +1,8 @@
+/**
+ * SettingsScreen - Agentation POC
+ *
+ * @author @skylarbarrera
+ */
 
 import React, { useState } from 'react';
 import {

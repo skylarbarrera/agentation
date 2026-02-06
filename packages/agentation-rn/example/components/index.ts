@@ -1,3 +1,7 @@
+/**
+ * Components Index
+ * @author @skylarbarrera
+ */
 
 export { Card } from './Card';
 export { Button } from './Button';

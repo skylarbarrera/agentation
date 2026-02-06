@@ -1,3 +1,7 @@
+/**
+ * NoteBox Component - For limitations and caveats
+ * @author @skylarbarrera
+ */
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';

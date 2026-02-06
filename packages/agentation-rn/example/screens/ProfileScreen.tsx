@@ -1,3 +1,8 @@
+/**
+ * ProfileScreen - Agentation POC
+ *
+ * @author @skylarbarrera
+ */
 
 import React from 'react';
 import {

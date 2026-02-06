@@ -1,3 +1,7 @@
+/**
+ * DemoCard Component - Interactive demo element for testing annotations
+ * @author @skylarbarrera
+ */
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';

@@ -1,3 +1,8 @@
+/**
+ * HomeScreen - Agentation
+ *
+ * @author @skylarbarrera
+ */
 
 import React, { useState } from 'react';
 import {
@@ -33,6 +38,7 @@ type RootStackParamList = {
   Profile: { userId: string };
   ScrollExample: undefined;
   ModalExample: undefined;
+  Animation: undefined;
 };
 
 type HomeScreenProps = {
@@ -243,6 +249,11 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           <Button
             title="Modal"
             onPress={() => navigation.navigate('ModalExample')}
+            variant="secondary"
+          />
+          <Button
+            title="Animations"
+            onPress={() => navigation.navigate('Animation')}
             variant="secondary"
           />
         </View>

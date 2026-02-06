@@ -1,0 +1,3 @@
+packages/agentation-rn
+packages/agentation-reanimated-pause-state
+root

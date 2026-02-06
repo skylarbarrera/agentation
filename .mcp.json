@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "agentation-rn": {
+      "command": "node",
+      "args": ["/Users/skillet/dev/ai/agentation-mobile/packages/agentation-rn-mcp/dist/cli.js", "--mcp-only"]
+    }
+  }
+}

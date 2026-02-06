@@ -24,6 +24,7 @@ import { useAgentationSync } from '../hooks/useAgentationSync';
 import { generateId, getTimestamp } from '../utils/helpers';
 import { detectComponentAtPoint } from '../utils/componentDetection';
 import { generateMarkdown } from '../utils/markdownGeneration';
+import { fireAnnotationCreated, fireAnnotationUpdated, fireAnnotationDeleted } from '../utils/webhooks';
 import { Toolbar } from './Toolbar';
 import { AnnotationMarker } from './AnnotationMarker';
 import { AnnotationPopup } from './AnnotationPopup';
@@ -248,7 +249,7 @@ export function Agentation({
   const mergedOnDelete = onAnnotationDelete || onAnnotationDeleted;
   const mergedOnCopy = onCopy || onMarkdownCopied;
 
-  // Wrap add callback to sync to server when connected
+  // Wrap add callback to sync to server and fire webhooks
   const handleAnnotationCreated = useCallback((annotation: Annotation) => {
     // Call user callback first
     mergedOnAdd?.(annotation);
@@ -256,7 +257,33 @@ export function Agentation({
     if (endpoint && sessionId) {
       syncToServer(annotation);
     }
-  }, [mergedOnAdd, endpoint, sessionId, syncToServer]);
+    // Fire webhook if enabled
+    if (settings.webhooksEnabled && settings.webhookUrl) {
+      fireAnnotationCreated(settings.webhookUrl, sessionId ?? undefined, annotation);
+    }
+  }, [mergedOnAdd, endpoint, sessionId, syncToServer, settings.webhooksEnabled, settings.webhookUrl]);
+
+  // Wrap update callback to fire webhooks
+  const handleAnnotationUpdated = useCallback((annotation: Annotation) => {
+    mergedOnUpdate?.(annotation);
+    if (settings.webhooksEnabled && settings.webhookUrl) {
+      fireAnnotationUpdated(settings.webhookUrl, annotation);
+    }
+  }, [mergedOnUpdate, settings.webhooksEnabled, settings.webhookUrl]);
+
+  // Wrap delete callback to fire webhooks
+  // Note: onAnnotationDelete takes Annotation, deprecated onAnnotationDeleted takes string
+  const handleAnnotationDeleted = useCallback((annotation: Annotation) => {
+    // Call the appropriate callback based on which one is defined
+    if (onAnnotationDelete) {
+      onAnnotationDelete(annotation);
+    } else if (onAnnotationDeleted) {
+      onAnnotationDeleted(annotation.id);
+    }
+    if (settings.webhooksEnabled && settings.webhookUrl) {
+      fireAnnotationDeleted(settings.webhookUrl, annotation);
+    }
+  }, [onAnnotationDelete, onAnnotationDeleted, settings.webhooksEnabled, settings.webhookUrl]);
 
   // Convert DemoAnnotations to full Annotations if provided
   const initialAnnotations = useMemo(() => {
@@ -277,8 +304,8 @@ export function Agentation({
     screenName: storageKey,
     initialAnnotations,
     onAnnotationCreated: handleAnnotationCreated,
-    onAnnotationUpdated: mergedOnUpdate,
-    onAnnotationDeleted: mergedOnDelete,
+    onAnnotationUpdated: handleAnnotationUpdated,
+    onAnnotationDeleted: handleAnnotationDeleted,
     onMarkdownCopied: mergedOnCopy,
     copyToClipboard,
     plugins,

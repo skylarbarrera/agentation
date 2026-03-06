@@ -1,28 +1,19 @@
 # agentation-rn
 
-React Native support for [Agentation](https://agentation.dev) - Visual feedback for AI coding agents.
+React Native support for [Agentation](https://agentation.dev) — visual feedback tool for AI coding agents.
 
-Tap components in your app to create annotations, then copy structured markdown output for AI tools like Claude Code.
+Tap any component in your app to annotate it, then copy structured markdown output for AI tools like Claude Code.
 
-## Installation
+## Install
 
 ```bash
 npm install agentation-rn
-# or
-yarn add agentation-rn
-# or
-pnpm add agentation-rn
 ```
 
 ### Peer Dependencies
 
 ```bash
 npm install react-native-safe-area-context
-```
-
-Optional (for enhanced features):
-```bash
-npm install @callstack/liquid-glass react-native-svg
 ```
 
 ## Quick Start
@@ -32,12 +23,63 @@ import { Agentation } from 'agentation-rn';
 
 export default function App() {
   return (
+    <Agentation>
+      <YourApp />
+    </Agentation>
+  );
+}
+```
+
+The toolbar appears in the bottom-right corner. Tap to activate, then tap any component to annotate it.
+
+## Features
+
+- **Tap to annotate** — Tap any component with automatic file/line number identification
+- **Component detection** — Identifies React components with source paths via dev tools
+- **Structured output** — Copy markdown with selectors, positions, and context
+- **4 detail levels** — compact, standard, detailed, forensic
+- **Dark/light mode** — Toggle in settings, persists via AsyncStorage
+- **Navigation support** — Detects React Navigation routes
+- **MCP integration** — Connect to AI agents via Model Context Protocol
+- **Plugin system** — Extend with `agentation-reanimated-pause-state` and others
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `onAnnotationAdd` | `(annotation: Annotation) => void` | — | Called when an annotation is created |
+| `onAnnotationDelete` | `(annotation: Annotation) => void` | — | Called when an annotation is deleted |
+| `onAnnotationUpdate` | `(annotation: Annotation) => void` | — | Called when an annotation is edited |
+| `onAnnotationsClear` | `(annotations: Annotation[]) => void` | — | Called when all annotations are cleared |
+| `onCopy` | `(markdown: string) => void` | — | Callback with markdown output when copy is clicked |
+| `onSubmit` | `(output: string, annotations: Annotation[]) => void` | — | Called when "Send to Agent" is clicked |
+| `copyToClipboard` | `boolean` | `true` | Set to false to prevent writing to clipboard |
+| `endpoint` | `string` | — | MCP server URL (e.g., `"http://localhost:4747"`) |
+| `sessionId` | `string` | — | Pre-existing session ID to join |
+| `onSessionCreated` | `(sessionId: string) => void` | — | Called when a new session is created |
+| `webhookUrl` | `string` | — | Webhook URL to receive annotation events |
+| `disabled` | `boolean` | `false` | Disable annotation mode entirely (for production builds) |
+| `plugins` | `AgentationPlugin[]` | `[]` | Plugins to extend functionality |
+| `children` | `ReactNode` | — | **Required** — your app content |
+
+### Programmatic Integration
+
+```tsx
+import { Agentation, type Annotation } from 'agentation-rn';
+
+function App() {
+  const handleAnnotation = (annotation: Annotation) => {
+    console.log(annotation.element);      // "Button"
+    console.log(annotation.elementPath);  // "src/components/Button.tsx:42"
+    console.log(annotation.boundingBox);  // { x, y, width, height }
+    console.log(annotation.componentType); // "TouchableOpacity"
+    sendToAgent(annotation);
+  };
+
+  return (
     <Agentation
-      onAnnotationAdd={(annotation) => console.log('Added:', annotation)}
-      onCopy={(markdown) => {
-        // Send to your AI tool
-        console.log('Markdown:', markdown);
-      }}
+      onAnnotationAdd={handleAnnotation}
+      copyToClipboard={false}
     >
       <YourApp />
     </Agentation>
@@ -45,109 +87,25 @@ export default function App() {
 }
 ```
 
-## Features
-
-- **Tap to Annotate** - Tap any component to create an annotation
-- **Component Detection** - Automatically identifies React components with file paths and line numbers
-- **Structured Output** - Generates AI-ready markdown with element context
-- **4 Detail Levels** - compact, standard, detailed, forensic
-- **Settings Persistence** - Saves preferences via AsyncStorage
-- **Navigation Support** - Detects React Navigation routes
-- **MCP Integration** - Connect to AI agents via Model Context Protocol (v2)
-- **Session Management** - Group annotations by screen/route (v2)
-- **Intent & Severity** - Classify feedback: fix/change/question + blocking/important/suggestion (v2)
-- **Webhooks** - HTTP callbacks for annotation events (v2)
-
-## V2 Features (MCP Integration)
-
-### Connect to AI Agents
+### MCP Integration
 
 ```tsx
 <Agentation
-  endpoint="http://localhost:4848"  // MCP server URL
-  onSessionCreated={(sessionId) => console.log('Session:', sessionId)}
-  webhookUrl="https://api.example.com/webhook"  // Optional webhook
+  endpoint="http://192.168.x.x:4747"
+  sessionId="existing-session-id"         // optional — rejoin existing
+  onSessionCreated={(id) => save(id)}
+  onSubmit={(output, annotations) => {}}  // fired when "Send to Agent" clicked
+  webhookUrl="https://api.example.com/hook"
 >
   <YourApp />
 </Agentation>
 ```
 
-### Start the MCP Server
+## Mobile-Specific APIs
 
-```bash
-# Install globally
-npm install -g agentation-rn-mcp
+### `useAgentationScroll`
 
-# Or run with npx
-npx agentation-rn-mcp
-
-# Options
-npx agentation-rn-mcp --port 4848 --http-only
-```
-
-### Claude Code Configuration
-
-Add to your `.claude/settings.json`:
-
-```json
-{
-  "mcpServers": {
-    "agentation-rn": {
-      "command": "npx",
-      "args": ["agentation-rn-mcp"]
-    }
-  }
-}
-```
-
-### Available MCP Tools
-
-| Tool | Description |
-|------|-------------|
-| `agentation_list_sessions` | List all feedback sessions |
-| `agentation_get_session` | Get session with annotations |
-| `agentation_get_pending` | Get pending for session |
-| `agentation_get_all_pending` | Get all pending annotations |
-| `agentation_acknowledge` | Mark annotation acknowledged |
-| `agentation_resolve` | Mark annotation resolved |
-| `agentation_dismiss` | Dismiss annotation with reason |
-| `agentation_reply` | Add reply to annotation thread |
-| `agentation_wait_for_action` | Wait for "Send to Agent" button |
-
-## API
-
-### `<Agentation>`
-
-Main wrapper component. Provides annotation functionality to your entire app.
-
-```tsx
-<Agentation
-  // Callbacks
-  onAnnotationAdd={(annotation) => {}}     // Called when annotation created
-  onAnnotationUpdate={(annotation) => {}}  // Called when annotation edited
-  onAnnotationDelete={(annotation) => {}}  // Called when annotation deleted
-  onAnnotationsClear={(annotations) => {}} // Called when all cleared
-  onCopy={(markdown) => {}}                // Called when markdown copied
-
-  // V2 MCP Integration
-  endpoint="http://192.168.x.x:4848"       // MCP server URL
-  initialSessionId="abc123"                 // Rejoin existing session
-  onSessionCreated={(sessionId) => {}}     // Called when session created
-  webhookUrl="https://..."                  // Webhook for events
-
-  // Options
-  disabled={false}                          // Disable annotation mode
-  copyToClipboard={true}                    // Auto-copy to clipboard
->
-  <YourApp />
-</Agentation>
-```
-
-### Mobile-Specific APIs
-
-#### `useAgentationScroll`
-
-Required for ScrollViews - keeps annotation markers positioned correctly during scroll.
+Required for ScrollViews — keeps annotation markers positioned correctly during scroll.
 
 ```tsx
 import { useAgentationScroll } from 'agentation-rn';
@@ -156,19 +114,16 @@ function MyScreen() {
   const { onScroll, scrollEventThrottle } = useAgentationScroll();
 
   return (
-    <ScrollView
-      onScroll={onScroll}
-      scrollEventThrottle={scrollEventThrottle}
-    >
-      {/* Your content */}
+    <ScrollView onScroll={onScroll} scrollEventThrottle={scrollEventThrottle}>
+      <YourContent />
     </ScrollView>
   );
 }
 ```
 
-#### `<AgenationView>`
+### `<AgenationView>`
 
-For Modals and Sheets - provides isolated annotation context since iOS modals render outside the normal view hierarchy.
+For Modals and Sheets — iOS modals render outside the normal view hierarchy and need their own annotation context.
 
 ```tsx
 import { AgenationView } from 'agentation-rn';
@@ -185,85 +140,38 @@ function MyModal({ visible, onClose }) {
 }
 ```
 
-### Hooks
-
-#### `useAnnotations`
-
-Low-level hook for custom annotation UIs.
-
-```tsx
-import { useAnnotations } from 'agentation-rn';
-
-const {
-  annotations,
-  addAnnotation,
-  updateAnnotation,
-  deleteAnnotation,
-  clearAnnotations,
-  copyToClipboard,
-  settings,
-  updateSettings,
-} = useAnnotations({ screenName: 'MyScreen' });
-```
-
-#### `useAgentationSync`
-
-Hook for MCP server synchronization.
-
-```tsx
-import { useAgentationSync } from 'agentation-rn';
-
-const {
-  connectionStatus,   // 'disconnected' | 'connecting' | 'connected'
-  isConnected,
-  sessionId,
-  session,
-  syncAnnotation,
-  syncAll,
-  sendToAgent,        // "Send to Agent" action
-  reconnect,
-} = useAgentationSync({
-  endpoint: 'http://192.168.x.x:4848',
-  routeName: 'HomeScreen',
-  autoSync: true,
-});
-```
-
-### Utilities
+## Utilities
 
 ```tsx
 import {
-  // Component detection
+  // Component detection (web parity aliases)
   detectComponent,
-  identifyElement, // alias for detectComponent
+  identifyElement,   // alias for detectComponent
   formatElementPath,
-  getElementPath,  // alias for formatElementPath
+  getElementPath,    // alias for formatElementPath
 
   // Markdown generation
   generateMarkdown,
-  generateSimpleMarkdown,
 
-  // Storage
+  // Storage (web parity)
   saveAnnotations,
   loadAnnotations,
   clearAnnotations,
+  getStorageKey,
 
-  // V2 Sync
+  // Sync
   createSession,
   syncAnnotation,
   requestAction,
-
-  // Helpers
-  copyToClipboard,
-  generateId,
+  listSessions,
 } from 'agentation-rn';
 ```
 
-## V2 Types
+## Annotation Type
 
 ```typescript
-// Annotation with V2 protocol fields
 type Annotation = {
+  // Required
   id: string;
   x: number;
   y: number;
@@ -272,103 +180,62 @@ type Annotation = {
   elementPath: string;
   timestamp: number;
 
-  // V2 Protocol fields
+  // Optional shared fields (web parity)
+  selectedText?: string;
+  boundingBox?: { x: number; y: number; width: number; height: number };
+  nearbyText?: string;
+  nearbyElements?: string;
+  fullPath?: string;
+  accessibility?: string;
+  isFixed?: boolean;
+
+  // V2 protocol fields
   sessionId?: string;
+  url?: string;
   intent?: 'fix' | 'change' | 'question' | 'approve';
   severity?: 'blocking' | 'important' | 'suggestion';
   status?: 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
   thread?: ThreadMessage[];
+  createdAt?: string;
+  updatedAt?: string;
 
   // RN-specific
   componentType?: string;
   sourcePath?: string;
   lineNumber?: number;
+  columnNumber?: number;
+  testID?: string;
   routeName?: string;
+  platform?: 'ios' | 'android' | 'web';
+  screenDimensions?: { width: number; height: number };
+  pluginExtras?: Record<string, unknown>;
 };
+```
 
-type Session = {
-  id: string;
-  url: string;  // routeName in RN
-  status: 'active' | 'approved' | 'closed';
-  createdAt: string;
-};
+## Output Example
 
-type ThreadMessage = {
-  id: string;
-  role: 'human' | 'agent';
-  content: string;
-  timestamp: number;
-};
+Standard mode:
+
+```markdown
+## Page Feedback: HomeScreen
+**Viewport:** 390×844
+**Platform:** ios
+
+### 1. LoginButton
+**Location:** src/screens/Login.tsx:42
+**React:** <App><Auth><LoginButton>
+**Selected text:** "Log In"
+**Feedback:** Button contrast too low
 ```
 
 ## Platform Support
 
 | Platform | Status |
 |----------|--------|
-| iOS | Supported |
-| Android | Supported |
-| React Native | >= 0.72.0 |
-| React | >= 18.0.0 |
-
-### Navigation Support
-
-| Library | Status |
-|---------|--------|
-| React Navigation | Supported |
-| Expo Router | Coming soon |
-
-## Output Example
-
-When you copy annotations, you get structured markdown:
-
-```markdown
-# App Feedback - MyScreen
-
-## Annotation 1
-- **Element:** Button (src/components/Button.tsx:42)
-- **Comment:** This button should be larger
-- **Intent:** fix
-- **Severity:** important
-- **Position:** x: 150, y: 320
-
-## Annotation 2
-- **Element:** Text (src/screens/Home.tsx:18)
-- **Comment:** Font size too small on mobile
-- **Intent:** change
-- **Severity:** suggestion
-- **Position:** x: 20, y: 180
-```
-
-## Running the Example
-
-```bash
-cd packages/agentation-rn/example
-pnpm install
-
-# Start MCP server (in separate terminal)
-cd ../agentation-rn-mcp
-npx agentation-rn-mcp --http-only
-
-# iOS
-pnpm ios
-
-# Android
-pnpm android
-```
-
-## Architecture
-
-```
-┌─────────────────┐    HTTP     ┌─────────────────┐    stdio    ┌─────────────┐
-│   RN App        │────────────▶│  MCP Server     │◀───────────▶│ Claude Code │
-│  (Expo/Metro)   │   :4848     │  (Node.js)      │     MCP     │   (Agent)   │
-└─────────────────┘             └────────┬────────┘             └─────────────┘
-                                         │
-                                    ┌────▼────┐
-                                    │ SQLite  │
-                                    │~/.agentation-rn/│
-                                    └─────────┘
-```
+| iOS | ✅ Supported |
+| Android | ✅ Supported |
+| React Native | ≥ 0.72 |
+| React | ≥ 18 |
 
 ## License
 

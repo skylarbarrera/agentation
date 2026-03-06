@@ -35,6 +35,7 @@ const SETTINGS_KEY = '@agentation:settings';
  * Generate storage key for a screen
  * Format: @agentation:ScreenName
  */
+// @shared-interface
 export function getStorageKey(screenName: string): StorageKey {
   return `@agentation:${screenName}`;
 }
@@ -42,6 +43,7 @@ export function getStorageKey(screenName: string): StorageKey {
 /**
  * Save annotations to AsyncStorage
  */
+// @shared-interface (same API as web, AsyncStorage backend)
 export async function saveAnnotations(
   screenName: string,
   annotations: Annotation[]
@@ -59,6 +61,7 @@ export async function saveAnnotations(
 /**
  * Load annotations from AsyncStorage
  */
+// @shared-interface
 export async function loadAnnotations(
   screenName: string
 ): Promise<Annotation[]> {
@@ -81,6 +84,7 @@ export async function loadAnnotations(
 /**
  * Clear annotations for a screen
  */
+// @shared-interface
 export async function clearAnnotations(screenName: string): Promise<void> {
   try {
     const key = getStorageKey(screenName);
@@ -199,6 +203,7 @@ export function getSessionStorageKey(routeName: string): string {
  * @param routeName - Route/screen name
  * @param retentionDays - Days to retain annotations (default: 7)
  */
+// @shared-interface
 export async function loadAnnotationsV2(
   routeName: string,
   retentionDays: number = DEFAULT_RETENTION_DAYS
@@ -229,6 +234,7 @@ export async function loadAnnotationsV2(
  * @param routeName - Route/screen name
  * @param annotations - Annotations to save
  */
+// @shared-interface (same API as web, AsyncStorage backend)
 export async function saveAnnotationsV2(
   routeName: string,
   annotations: Annotation[]
@@ -246,6 +252,7 @@ export async function saveAnnotationsV2(
  * Clear annotations for a route (v2)
  * @param routeName - Route/screen name
  */
+// @shared-interface
 export async function clearAnnotationsV2(routeName: string): Promise<void> {
   try {
     const key = getV2StorageKey(routeName);
@@ -348,6 +355,7 @@ export async function clearSessionId(routeName: string): Promise<void> {
  * @param annotations - Annotations to save
  * @param sessionId - Current session ID for sync tracking
  */
+// @shared-interface (same API as web, AsyncStorage backend)
 export async function saveAnnotationsWithSyncMarker(
   routeName: string,
   annotations: Annotation[],

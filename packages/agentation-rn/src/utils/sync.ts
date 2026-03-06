@@ -23,6 +23,7 @@ import type {
 /**
  * Check if MCP server is reachable
  */
+// @rn-only
 export async function checkHealth(
   endpoint: string
 ): Promise<HealthCheckResponse | null> {
@@ -47,6 +48,7 @@ export async function checkHealth(
 /**
  * List all sessions from the server
  */
+// @shared
 export async function listSessions(
   endpoint: string,
   status?: string,
@@ -73,6 +75,7 @@ export async function listSessions(
 /**
  * Create a new session or get existing one for the URL/route
  */
+// @shared
 export async function createSession(
   endpoint: string,
   url: string,
@@ -95,6 +98,7 @@ export async function createSession(
 /**
  * Get a session with all its annotations
  */
+// @shared
 export async function getSession(
   endpoint: string,
   sessionId: string
@@ -118,6 +122,7 @@ export async function getSession(
 /**
  * Sync an annotation to the server (create or update)
  */
+// @shared
 export async function syncAnnotation(
   endpoint: string,
   sessionId: string,
@@ -139,6 +144,7 @@ export async function syncAnnotation(
 /**
  * Update an annotation on the server
  */
+// @shared
 export async function updateAnnotation(
   endpoint: string,
   annotationId: string,
@@ -160,6 +166,7 @@ export async function updateAnnotation(
 /**
  * Delete an annotation from the server
  */
+// @shared
 export async function deleteAnnotation(
   endpoint: string,
   annotationId: string
@@ -177,6 +184,7 @@ export async function deleteAnnotation(
 /**
  * Get pending annotations for a session
  */
+// @rn-only
 export async function getPendingAnnotations(
   endpoint: string,
   sessionId: string
@@ -196,6 +204,7 @@ export async function getPendingAnnotations(
 /**
  * Get all pending annotations across sessions
  */
+// @rn-only
 export async function getAllPendingAnnotations(
   endpoint: string
 ): Promise<Annotation[]> {
@@ -219,6 +228,7 @@ export async function getAllPendingAnnotations(
  * Send action request to the server
  * This is what happens when "Send to Agent" is clicked
  */
+// @shared
 export async function requestAction(
   endpoint: string,
   sessionId: string,

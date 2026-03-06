@@ -88,6 +88,7 @@ export type AnnotationColor = typeof COLOR_OPTIONS[number]['value'];
  *
  * Web uses CSS selectors, RN uses component paths
  */
+// @shared — identical to web DemoAnnotation
 export type DemoAnnotation = {
   /** Component path (e.g., "Button.tsx:42") or testID */
   selector: string;

@@ -1,8 +1,8 @@
 /**
  * Agentation V2 Schema Types
  *
- * These types define the v2 protocol for annotation sync, sessions, and MCP integration.
- * Copied from upstream web package spec with RN extensions.
+ * Types marked with @shared are identical to the web package and MCP server.
+ * These are candidates for extraction into a shared `agentation-types` package.
  *
  * @see https://github.com/benjitaylor/agentation/blob/main/package/src/types.ts
  */
@@ -15,26 +15,31 @@
  * Annotation intent classification
  * Describes what the user wants to happen
  */
+// @shared
 export type AnnotationIntent = 'fix' | 'change' | 'question' | 'approve';
 
 /**
  * Annotation severity/priority level
  */
+// @shared
 export type AnnotationSeverity = 'blocking' | 'important' | 'suggestion';
 
 /**
  * Annotation status in the workflow lifecycle
  */
+// @shared
 export type AnnotationStatus = 'pending' | 'acknowledged' | 'resolved' | 'dismissed';
 
 /**
  * Session status
  */
+// @shared
 export type SessionStatus = 'active' | 'approved' | 'closed';
 
 /**
  * Thread message for annotation conversations
  */
+// @shared
 export type ThreadMessage = {
   /** Unique message ID */
   id: string;
@@ -51,6 +56,7 @@ export type ThreadMessage = {
  * In web: tied to a URL
  * In RN: tied to a route name
  */
+// @shared
 export type Session = {
   /** Unique session ID */
   id: string;
@@ -71,6 +77,7 @@ export type Session = {
 /**
  * Session with its annotations
  */
+// @shared
 export type SessionWithAnnotations = Session & {
   annotations: V2Annotation[];
 };
@@ -79,6 +86,7 @@ export type SessionWithAnnotations = Session & {
  * V2 Annotation protocol fields
  * These are the NEW fields added in v2 for MCP/sync support
  */
+// @shared
 export interface V2AnnotationProtocolFields {
   /** Session this annotation belongs to */
   sessionId?: string;
@@ -110,6 +118,7 @@ export interface V2AnnotationProtocolFields {
  * Base annotation fields shared between web and RN
  * These are the core v1 fields that both platforms have
  */
+// @shared
 export interface BaseAnnotationFields {
   /** Unique identifier */
   id: string;
@@ -147,6 +156,7 @@ export interface BaseAnnotationFields {
  * Web-specific annotation fields
  * Kept for protocol parity but not populated in RN
  */
+// @shared
 export interface WebAnnotationFields {
   /** CSS classes on the element (web only) */
   cssClasses?: string;
@@ -162,6 +172,7 @@ export interface WebAnnotationFields {
  * Complete V2 Annotation type
  * Combines base fields + web fields + v2 protocol fields
  */
+// @shared
 export type V2Annotation = BaseAnnotationFields & WebAnnotationFields & V2AnnotationProtocolFields;
 
 // =============================================================================
@@ -171,6 +182,7 @@ export type V2Annotation = BaseAnnotationFields & WebAnnotationFields & V2Annota
 /**
  * Response from health check endpoint
  */
+// @shared
 export type HealthCheckResponse = {
   status: 'ok';
   version: string;
@@ -179,6 +191,7 @@ export type HealthCheckResponse = {
 /**
  * Request to send action to agent
  */
+// @shared
 export type ActionRequest = {
   /** Session ID */
   sessionId: string;
@@ -193,6 +206,7 @@ export type ActionRequest = {
 /**
  * Response from action request
  */
+// @shared
 export type ActionResponse = {
   success: boolean;
   message?: string;
@@ -211,6 +225,7 @@ export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected';
 /**
  * Webhook event types
  */
+// @shared
 export type WebhookEventType =
   | 'annotation.created'
   | 'annotation.updated'
@@ -221,6 +236,7 @@ export type WebhookEventType =
 /**
  * Webhook payload
  */
+// @shared
 export type WebhookPayload = {
   event: WebhookEventType;
   timestamp: string;
@@ -240,9 +256,11 @@ export type WebhookPayload = {
 /**
  * Default annotation status for new annotations
  */
+// @shared
 export const DEFAULT_ANNOTATION_STATUS: AnnotationStatus = 'pending';
 
 /**
  * Default session status for new sessions
  */
+// @shared
 export const DEFAULT_SESSION_STATUS: SessionStatus = 'active';

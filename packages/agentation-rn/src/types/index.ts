@@ -803,7 +803,7 @@ export interface ComponentDetection {
 /**
  * Agentation settings
  * Stored in AsyncStorage for persistence
- * Web parity: includes outputDetail and clearAfterCopy
+ * Web parity: includes outputDetail and autoClearAfterCopy
  */
 export interface AgenationSettings {
   // ==========================================================================
@@ -821,7 +821,7 @@ export interface AgenationSettings {
    * Clear annotations after copying
    * Web parity: default false
    */
-  clearAfterCopy: boolean;
+  autoClearAfterCopy: boolean;
 
   /**
    * Annotation marker color
@@ -865,7 +865,7 @@ export interface AgenationSettings {
  */
 export const DEFAULT_SETTINGS: AgenationSettings = {
   outputDetail: 'standard',
-  clearAfterCopy: false,
+  autoClearAfterCopy: false,
   annotationColor: '#3c82f7',
   autoSave: true,
   retentionDays: 7,

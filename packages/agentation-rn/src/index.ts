@@ -33,6 +33,7 @@ export type {
 
   // Plugin system
   AgentationPlugin,
+  PluginContext,
   PluginExtra,
 
   // Component types (for custom UIs)

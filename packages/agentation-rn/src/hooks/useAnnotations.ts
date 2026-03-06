@@ -1,40 +1,38 @@
 /**
  * useAnnotations Hook
- * Manages annotation state, storage, and operations
+ * Manages annotation state and operations
+ *
+ * NOTE: Storage loading/saving is handled by the parent component (Agentation)
+ * to avoid setState-during-render issues with async effects.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Platform, Dimensions, PixelRatio } from 'react-native';
 import { debugError } from '../utils/debug';
 import type { Annotation, OutputDetailLevel, AgentationPlugin, PluginContext, PluginExtra } from '../types';
-import { saveAnnotations, loadAnnotations } from '../utils/storage';
 import { generateId, getTimestamp, copyToClipboard } from '../utils/helpers';
 import { detectComponentAtPoint, formatElementPath, getComponentType } from '../utils/componentDetection';
 import { generateMarkdown } from '../utils/markdownGeneration';
 import { getNavigationInfo, NavigationResolver } from '../utils/navigationDetection';
 
 export interface UseAnnotationsOptions {
-  /** Screen name for storage key */
-  screenName: string;
+  /** Screen name for context (no longer used for storage) */
+  screenName?: string;
 
   /** Initial annotations (demo mode) */
   initialAnnotations?: Annotation[];
 
   /** Callback when annotation created */
-  onAnnotationCreated?: (annotation: Annotation) => void;
+  onAnnotationAdd?: (annotation: Annotation) => void;
 
   /** Callback when annotation updated */
-  onAnnotationUpdated?: (annotation: Annotation) => void;
+  onAnnotationUpdate?: (annotation: Annotation) => void;
 
-  /**
-   * Callback when annotation deleted
-   * Web parity: receives full annotation object
-   * Legacy: receives just the ID (deprecated)
-   */
-  onAnnotationDeleted?: ((annotation: Annotation) => void) | ((annotationId: string) => void);
+  /** Callback when annotation deleted */
+  onAnnotationDelete?: (annotation: Annotation) => void;
 
   /** Callback when markdown copied */
-  onMarkdownCopied?: (markdown: string) => void;
+  onCopy?: (markdown: string) => void;
 
   /**
    * Whether to copy to clipboard when copy button is clicked
@@ -58,9 +56,6 @@ export interface UseAnnotationsOptions {
 export interface UseAnnotationsReturn {
   /** Current annotations */
   annotations: Annotation[];
-
-  /** Whether annotations are loading from storage */
-  loading: boolean;
 
   /** Create new annotation from tap */
   createAnnotation: (
@@ -93,54 +88,18 @@ export function useAnnotations(
   options: UseAnnotationsOptions
 ): UseAnnotationsReturn {
   const {
-    screenName,
+    screenName = 'default',
     initialAnnotations = [],
-    onAnnotationCreated,
-    onAnnotationUpdated,
-    onAnnotationDeleted,
-    onMarkdownCopied,
+    onAnnotationAdd,
+    onAnnotationUpdate,
+    onAnnotationDelete,
+    onCopy,
     copyToClipboard: shouldCopyToClipboard = true,
     navigationResolver,
     plugins = [],
   } = options;
 
   const [annotations, setAnnotations] = useState<Annotation[]>(initialAnnotations);
-  const [loading, setLoading] = useState(true);
-
-  // Load annotations from storage on mount
-  useEffect(() => {
-    loadAnnotationsFromStorage();
-  }, [screenName]);
-
-  // Save annotations when they change
-  useEffect(() => {
-    if (!loading) {
-      saveAnnotationsToStorage();
-    }
-  }, [annotations, loading]);
-
-  const loadAnnotationsFromStorage = async () => {
-    try {
-      setLoading(true);
-      const loaded = await loadAnnotations(screenName);
-
-      if (loaded.length > 0) {
-        setAnnotations(loaded);
-      }
-    } catch (error) {
-      debugError('Failed to load annotations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveAnnotationsToStorage = async () => {
-    try {
-      await saveAnnotations(screenName, annotations);
-    } catch (error) {
-      debugError('Failed to save annotations:', error);
-    }
-  };
 
   const createAnnotation = useCallback(
     async (
@@ -250,7 +209,7 @@ export function useAnnotations(
         setAnnotations(prev => [...prev, annotation]);
 
         // Callback
-        onAnnotationCreated?.(annotation);
+        onAnnotationAdd?.(annotation);
 
         return annotation;
       } catch (error) {
@@ -258,42 +217,44 @@ export function useAnnotations(
         return null;
       }
     },
-    [onAnnotationCreated, plugins, screenName]
+    [navigationResolver, onAnnotationAdd, plugins, screenName]
   );
 
   const updateAnnotation = useCallback(
     (id: string, comment: string) => {
+      let updatedAnnotation: Annotation | undefined;
+
       setAnnotations(prev =>
-        prev.map(ann =>
-          ann.id === id
-            ? { ...ann, comment, timestamp: getTimestamp() }
-            : ann
-        )
+        prev.map(ann => {
+          if (ann.id === id) {
+            updatedAnnotation = { ...ann, comment, timestamp: getTimestamp() };
+            return updatedAnnotation;
+          }
+          return ann;
+        })
       );
 
-      const updated = annotations.find(a => a.id === id);
-      if (updated) {
-        onAnnotationUpdated?.({ ...updated, comment });
+      if (updatedAnnotation) {
+        onAnnotationUpdate?.(updatedAnnotation);
       }
     },
-    [annotations, onAnnotationUpdated]
+    [onAnnotationUpdate]
   );
 
   const deleteAnnotation = useCallback(
     (id: string) => {
-      // Find annotation before deleting (for callback)
-      const annotation = annotations.find(a => a.id === id);
+      let deletedAnnotation: Annotation | undefined;
 
-      setAnnotations(prev => prev.filter(ann => ann.id !== id));
+      setAnnotations(prev => {
+        deletedAnnotation = prev.find(ann => ann.id === id);
+        return prev.filter(ann => ann.id !== id);
+      });
 
-      // Call callback with annotation if found, otherwise ID
-      if (onAnnotationDeleted && annotation) {
-        // Try to call with full annotation (web API)
-        // If callback expects string, TypeScript will handle it
-        (onAnnotationDeleted as (annotation: Annotation) => void)(annotation);
+      if (deletedAnnotation) {
+        onAnnotationDelete?.(deletedAnnotation);
       }
     },
-    [onAnnotationDeleted, annotations]
+    [onAnnotationDelete]
   );
 
   const clearAll = useCallback(() => {
@@ -336,12 +297,12 @@ export function useAnnotations(
       }
 
       // Always call callback with markdown content
-      onMarkdownCopied?.(finalContent);
+      onCopy?.(finalContent);
     } catch (error) {
       debugError('Failed to copy markdown:', error);
       throw error;
     }
-  }, [annotations, screenName, onMarkdownCopied, shouldCopyToClipboard]);
+  }, [annotations, screenName, onCopy, shouldCopyToClipboard]);
 
   const getAnnotation = useCallback(
     (id: string) => {
@@ -352,7 +313,6 @@ export function useAnnotations(
 
   return {
     annotations,
-    loading,
     createAnnotation,
     updateAnnotation,
     deleteAnnotation,

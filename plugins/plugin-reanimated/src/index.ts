@@ -7,7 +7,7 @@
  * @example
  * ```tsx
  * import { Agentation } from 'agentation-rn';
- * import { reanimatedPausePlugin } from 'agentation-reanimated-pause-state';
+ * import { reanimatedPausePlugin } from '@agentation/plugin-reanimated';
  *
  * export function App() {
  *   return (
@@ -93,7 +93,7 @@ export function reanimatedPausePlugin(): AgentationPlugin {
     supportsPause: true,
 
     isAvailable(): boolean {
-      return true;
+      return isReanimatedPauseStateAvailable();
     },
 
     onPauseChange(paused: boolean): void {

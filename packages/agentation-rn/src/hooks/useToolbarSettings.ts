@@ -14,8 +14,8 @@ function getNextDetailLevel(current: OutputDetailLevel): OutputDetailLevel {
 export interface ToolbarSettingsOptions {
   controlledOutputDetail?: OutputDetailLevel;
   onOutputDetailChange?: (level: OutputDetailLevel) => void;
-  controlledClearAfterCopy?: boolean;
-  onClearAfterCopyChange?: (value: boolean) => void;
+  controlledAutoClearAfterCopy?: boolean;
+  onAutoClearAfterCopyChange?: (value: boolean) => void;
   controlledAnnotationColor?: string;
   onAnnotationColorChange?: (color: string) => void;
   // V2 Webhook settings
@@ -27,12 +27,12 @@ export interface ToolbarSettingsOptions {
 
 export interface ToolbarSettingsResult {
   currentOutputDetail: OutputDetailLevel;
-  currentClearAfterCopy: boolean;
+  currentAutoClearAfterCopy: boolean;
   currentAnnotationColor: string;
   currentWebhookUrl: string;
   currentWebhooksEnabled: boolean;
   handleOutputDetailCycle: () => void;
-  handleClearAfterCopyToggle: () => void;
+  handleAutoClearAfterCopyToggle: () => void;
   handleAnnotationColorCycle: () => void;
   handleWebhookUrlChange: (url: string) => void;
   handleWebhooksEnabledToggle: () => void;
@@ -42,8 +42,8 @@ export function useToolbarSettings(options: ToolbarSettingsOptions): ToolbarSett
   const {
     controlledOutputDetail,
     onOutputDetailChange,
-    controlledClearAfterCopy,
-    onClearAfterCopyChange,
+    controlledAutoClearAfterCopy,
+    onAutoClearAfterCopyChange,
     controlledAnnotationColor,
     onAnnotationColorChange,
     controlledWebhookUrl,
@@ -59,7 +59,7 @@ export function useToolbarSettings(options: ToolbarSettingsOptions): ToolbarSett
   }, []);
 
   const currentOutputDetail = controlledOutputDetail ?? internalSettings.outputDetail;
-  const currentClearAfterCopy = controlledClearAfterCopy ?? internalSettings.clearAfterCopy;
+  const currentAutoClearAfterCopy = controlledAutoClearAfterCopy ?? internalSettings.autoClearAfterCopy;
   const currentAnnotationColor = controlledAnnotationColor ?? internalSettings.annotationColor;
   const currentWebhookUrl = controlledWebhookUrl ?? internalSettings.webhookUrl ?? '';
   const currentWebhooksEnabled = controlledWebhooksEnabled ?? internalSettings.webhooksEnabled ?? false;
@@ -74,15 +74,15 @@ export function useToolbarSettings(options: ToolbarSettingsOptions): ToolbarSett
     }
   }, [currentOutputDetail, onOutputDetailChange]);
 
-  const handleClearAfterCopyToggle = useCallback(() => {
-    const newValue = !currentClearAfterCopy;
-    if (onClearAfterCopyChange) {
-      onClearAfterCopyChange(newValue);
+  const handleAutoClearAfterCopyToggle = useCallback(() => {
+    const newValue = !currentAutoClearAfterCopy;
+    if (onAutoClearAfterCopyChange) {
+      onAutoClearAfterCopyChange(newValue);
     } else {
-      setInternalSettings(prev => ({ ...prev, clearAfterCopy: newValue }));
-      saveSettings({ clearAfterCopy: newValue });
+      setInternalSettings(prev => ({ ...prev, autoClearAfterCopy: newValue }));
+      saveSettings({ autoClearAfterCopy: newValue });
     }
-  }, [currentClearAfterCopy, onClearAfterCopyChange]);
+  }, [currentAutoClearAfterCopy, onAutoClearAfterCopyChange]);
 
   const handleAnnotationColorCycle = useCallback(() => {
     const currentIndex = COLOR_OPTIONS.findIndex(c => c.value === currentAnnotationColor);
@@ -117,12 +117,12 @@ export function useToolbarSettings(options: ToolbarSettingsOptions): ToolbarSett
 
   return {
     currentOutputDetail,
-    currentClearAfterCopy,
+    currentAutoClearAfterCopy,
     currentAnnotationColor,
     currentWebhookUrl,
     currentWebhooksEnabled,
     handleOutputDetailCycle,
-    handleClearAfterCopyToggle,
+    handleAutoClearAfterCopyToggle,
     handleAnnotationColorCycle,
     handleWebhookUrlChange,
     handleWebhooksEnabledToggle,

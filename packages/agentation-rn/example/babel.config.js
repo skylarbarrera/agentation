@@ -5,6 +5,8 @@ module.exports = function (api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
+      // Pause state instrumentation (MUST be first)
+      'reanimated-pause-state/babel',
       // Injects __callerSource prop into JSX elements with file, line, and column info
       inspectorBabelPlugin,
       // Reanimated must be listed last

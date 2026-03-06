@@ -206,10 +206,10 @@ export function Agentation({
     saveSettings({ annotationColor: color });
   }, [settings]);
 
-  const handleClearAfterCopyChange = useCallback((value: boolean) => {
-    const newSettings = { ...settings, clearAfterCopy: value };
+  const handleAutoClearAfterCopyChange = useCallback((value: boolean) => {
+    const newSettings = { ...settings, autoClearAfterCopy: value };
     setSettings(newSettings);
-    saveSettings({ clearAfterCopy: value });
+    saveSettings({ autoClearAfterCopy: value });
   }, [settings]);
 
   const handleOutputDetailChange = useCallback((level: OutputDetailLevel) => {
@@ -320,10 +320,10 @@ export function Agentation({
   } = useAnnotations({
     screenName: storageKey,
     initialAnnotations,
-    onAnnotationCreated: handleAnnotationCreated,
-    onAnnotationUpdated: handleAnnotationUpdated,
-    onAnnotationDeleted: handleAnnotationDeleted,
-    onMarkdownCopied: mergedOnCopy,
+    onAnnotationAdd: handleAnnotationCreated,
+    onAnnotationUpdate: handleAnnotationUpdated,
+    onAnnotationDelete: handleAnnotationDeleted,
+    onCopy: mergedOnCopy,
     copyToClipboard,
     plugins,
   });
@@ -447,10 +447,10 @@ export function Agentation({
 
   const handleCopyMarkdown = useCallback(async () => {
     await copyMarkdown(settings.outputDetail);
-    if (settings.clearAfterCopy) {
+    if (settings.autoClearAfterCopy) {
       clearAll();
     }
-  }, [copyMarkdown, settings.outputDetail, settings.clearAfterCopy, clearAll]);
+  }, [copyMarkdown, settings.outputDetail, settings.autoClearAfterCopy, clearAll]);
 
   // Send annotations to agent via MCP endpoint
   const handleSendToAgent = useCallback(async () => {
@@ -577,8 +577,8 @@ export function Agentation({
             onAnnotationColorChange={handleAnnotationColorChange}
             outputDetail={settings.outputDetail}
             onOutputDetailChange={handleOutputDetailChange}
-            clearAfterCopy={settings.clearAfterCopy}
-            onClearAfterCopyChange={handleClearAfterCopyChange}
+            autoClearAfterCopy={settings.autoClearAfterCopy}
+            onAutoClearAfterCopyChange={handleAutoClearAfterCopyChange}
             onSettingsMenuChange={handleSettingsMenuChange}
             // Markers visibility toggle
             showMarkers={showMarkers}

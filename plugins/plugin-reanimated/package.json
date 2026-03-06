@@ -27,9 +27,13 @@
     "react-native": ">=0.70.0",
     "reanimated-pause-state": ">=0.1.0"
   },
+  "peerDependenciesMeta": {
+    "reanimated-pause-state": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "agentation-rn": "workspace:*",
-    "reanimated-pause-state": "link:../../../reanimated-pause-state",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
   },

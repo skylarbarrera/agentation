@@ -5,5 +5,5 @@ export default defineConfig({
   format: ['cjs', 'esm'],
   dts: true,
   clean: true,
-  external: ['react', 'react-native', 'agentation-rn', 'reanimated-pause-state'],
+  external: ['react', 'react-native', 'reanimated-pause-state', 'agentation-rn'],
 });

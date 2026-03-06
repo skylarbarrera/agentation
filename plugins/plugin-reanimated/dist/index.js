@@ -38,7 +38,7 @@ function reanimatedPausePlugin() {
     id: "reanimated-pause-state",
     supportsPause: true,
     isAvailable() {
-      return true;
+      return isReanimatedPauseStateAvailable();
     },
     onPauseChange(paused) {
       if (!RPS) return;

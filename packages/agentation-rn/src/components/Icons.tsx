@@ -524,6 +524,32 @@ export function IconCheckSmall({ size = 12, color = 'currentColor' }: IconProps)
   );
 }
 
+/**
+ * Checkmark in circle - matches web IconCopyAnimated success state
+ */
+export function IconCheckCircle({ size = 24, color = '#22c55e' }: IconProps) {
+  if (!Svg) return <EmojiIcon emoji="✓" size={size} />;
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 20C7.58172 20 4 16.4182 4 12C4 7.58172 7.58172 4 12 4C16.4182 4 20 7.58172 20 12C20 16.4182 16.4182 20 12 20Z"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M15 10L11 14.25L9.25 12.25"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 const styles = StyleSheet.create({
   emojiContainer: {
     justifyContent: 'center',

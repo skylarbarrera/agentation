@@ -153,8 +153,12 @@ function generateStandardOutput(
       content += `**React:** ${react}\n`;
     }
 
-    if (annotation.boundingBox) {
-      content += `**Position:** ${Math.round(annotation.boundingBox.x)}, ${Math.round(annotation.boundingBox.y)} (${Math.round(annotation.boundingBox.width)}x${Math.round(annotation.boundingBox.height)})\n`;
+    if (annotation.selectedText) {
+      content += `**Selected text:** "${annotation.selectedText}"\n`;
+    }
+
+    if (annotation.nearbyText && !annotation.selectedText) {
+      content += `**Context:** ${annotation.nearbyText.slice(0, 100)}\n`;
     }
 
     content += `**Feedback:** ${annotation.comment}\n\n`;

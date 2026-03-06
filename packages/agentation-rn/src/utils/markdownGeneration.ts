@@ -102,12 +102,17 @@ function generateCompactOutput(
   annotations: Annotation[],
   pageTitle: string
 ): string {
-  let content = `## Feedback: ${pageTitle}\n\n`;
+  let content = `## Page Feedback: ${pageTitle}\n\n`;
 
   annotations.forEach((annotation, index) => {
     const elementDisplay = annotation.element || 'Component';
-    content += `${index + 1}. **${annotation.elementPath}** (${elementDisplay})\n`;
-    content += `   ${annotation.comment}\n\n`;
+    content += `${index + 1}. **${elementDisplay}**: ${annotation.comment}`;
+    if (annotation.selectedText) {
+      const truncated = annotation.selectedText.slice(0, 30);
+      const suffix = annotation.selectedText.length > 30 ? '...' : '';
+      content += ` (re: "${truncated}${suffix}")`;
+    }
+    content += '\n';
   });
 
   return content;
@@ -130,7 +135,7 @@ function generateStandardOutput(
 
   // Basic context
   if (context.screenDims) {
-    content += `**Screen:** ${context.screenDims.width}x${context.screenDims.height}\n`;
+    content += `**Viewport:** ${context.screenDims.width}×${context.screenDims.height}\n`;
   }
   if (context.platform) {
     content += `**Platform:** ${context.platform}\n`;
@@ -141,10 +146,11 @@ function generateStandardOutput(
   // Annotations
   annotations.forEach((annotation, index) => {
     content += `### ${index + 1}. ${annotation.element || 'Component'}\n`;
-    content += `**Location:** \`${annotation.elementPath}\`\n`;
+    content += `**Location:** ${annotation.elementPath}\n`;
 
-    if (annotation.componentType) {
-      content += `**Component:** ${annotation.componentType}\n`;
+    if (annotation.componentType || annotation.reactComponents) {
+      const react = annotation.reactComponents || annotation.componentType;
+      content += `**React:** ${react}\n`;
     }
 
     if (annotation.boundingBox) {
@@ -192,10 +198,11 @@ function generateDetailedOutput(
   // Annotations with more detail
   annotations.forEach((annotation, index) => {
     content += `### ${index + 1}. ${annotation.element || 'Component'}\n\n`;
-    content += `**Location:** \`${annotation.elementPath}\`\n`;
+    content += `**Location:** ${annotation.elementPath}\n`;
 
-    if (annotation.componentType) {
-      content += `**Component:** ${annotation.componentType}\n`;
+    if (annotation.componentType || annotation.reactComponents) {
+      const react = annotation.reactComponents || annotation.componentType;
+      content += `**React:** ${react}\n`;
     }
 
     if (annotation.parentComponents && annotation.parentComponents.length > 0) {
@@ -299,7 +306,7 @@ function generateForensicOutput(
       content += `- Bounding box: x:${Math.round(annotation.boundingBox.x)}, y:${Math.round(annotation.boundingBox.y)}\n`;
       content += `- Dimensions: ${Math.round(annotation.boundingBox.width)}x${Math.round(annotation.boundingBox.height)}px\n`;
     }
-    content += `- Annotation at: ${Math.round(annotation.x)}px, ${Math.round(annotation.y)}px\n`;
+    content += `**Annotation at:** ${annotation.x.toFixed(1)}px from left, ${Math.round(annotation.y)}px from top\n`;
 
     // Text content
     if (annotation.selectedText) {

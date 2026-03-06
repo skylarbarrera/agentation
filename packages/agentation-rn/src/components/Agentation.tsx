@@ -591,8 +591,8 @@ export function Agentation({
             mcpEndpoint={endpoint}
             connectionStatus={endpoint ? connectionStatus : undefined}
             // Send to Agent button (only when endpoint provided)
-            showSendToAgent={!!endpoint}
-            onSendToAgent={endpoint ? handleSendToAgent : undefined}
+            showSendToAgent={!!endpoint || !!onSubmit}
+            onSendToAgent={(endpoint || onSubmit) ? handleSendToAgent : undefined}
             // Webhook settings
             webhookUrl={settings.webhookUrl}
             onWebhookUrlChange={handleWebhookUrlChange}

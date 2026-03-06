@@ -6,8 +6,9 @@ export interface AgenationCallbacks {
   onAnnotationAdd: (annotation: Annotation) => void;
   onAnnotationUpdate: (annotation: Annotation) => void;
   onAnnotationDelete: (annotation: Annotation) => void;
-  onCopy: (markdown: string) => void;
   onAnnotationsClear: (cleared: Annotation[]) => void;
+  onCopy: (markdown: string) => void;
+  onSubmit: (output: string, annotations: Annotation[]) => void;
   onAnnotationModeEnabled: () => void;
   onAnnotationModeDisabled: () => void;
 }
@@ -62,6 +63,13 @@ export function useApiEvents(maxEvents = 20): UseApiEventsReturn {
     });
   }, [addEvent]);
 
+  const onSubmit = useCallback((output: string, annotations: Annotation[]) => {
+    addEvent('onSubmit', {
+      length: output.length,
+      count: annotations.length,
+    });
+  }, [addEvent]);
+
   const onAnnotationsClear = useCallback((cleared: Annotation[]) => {
     addEvent('onAnnotationsClear', {
       count: cleared.length,
@@ -80,16 +88,18 @@ export function useApiEvents(maxEvents = 20): UseApiEventsReturn {
     onAnnotationAdd,
     onAnnotationUpdate,
     onAnnotationDelete,
-    onCopy,
     onAnnotationsClear,
+    onCopy,
+    onSubmit,
     onAnnotationModeEnabled,
     onAnnotationModeDisabled,
   }), [
     onAnnotationAdd,
     onAnnotationUpdate,
     onAnnotationDelete,
-    onCopy,
     onAnnotationsClear,
+    onCopy,
+    onSubmit,
     onAnnotationModeEnabled,
     onAnnotationModeDisabled,
   ]);

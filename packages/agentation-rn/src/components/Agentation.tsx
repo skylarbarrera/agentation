@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { debugLog } from '../utils/debug';
-import type { AgenationProps, Annotation, ComponentDetection, DemoAnnotation, AgenationSettings, OutputDetailLevel, AgentationPlugin } from '../types';
+import type { AgentationProps, AgenationProps, Annotation, ComponentDetection, DemoAnnotation, AgenationSettings, OutputDetailLevel, AgentationPlugin } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import { loadSettings, saveSettings } from '../utils/storage';
 import { useAnnotations } from '../hooks/useAnnotations';
@@ -31,7 +31,7 @@ import { AnnotationPopup } from './AnnotationPopup';
 import { AgenationContext, AgenationContextValue } from '../context/AgenationContext';
 
 
-export type { AgenationProps };
+export type { AgentationProps, AgenationProps };
 
 /**
  * Format detected component info for display
@@ -115,6 +115,7 @@ export function Agentation({
   onAnnotationUpdate,
   onAnnotationsClear,
   onCopy,
+  onSubmit,
   copyToClipboard = true,
   onAnnotationCreated,
   onAnnotationUpdated,
@@ -125,9 +126,11 @@ export function Agentation({
   plugins = [],
   // V2 MCP Integration Props
   endpoint,
+  sessionId: sessionIdProp,
   initialSessionId,
   onSessionCreated,
-}: AgenationProps) {
+  webhookUrl,
+}: AgentationProps) {
   const insets = useSafeAreaInsets();
 
   // Don't render in production or when disabled
@@ -163,7 +166,7 @@ export function Agentation({
     endpoint,
     routeName: currentRoute || storageKey,
     autoSync: true,
-    initialSessionId,
+    initialSessionId: sessionIdProp ?? initialSessionId,
     onSessionCreated,
   });
 
@@ -175,7 +178,13 @@ export function Agentation({
 
   // Load settings on mount
   useEffect(() => {
-    loadSettings().then(setSettings);
+    loadSettings().then((s) => {
+      // If webhookUrl prop provided, use it as default
+      if (webhookUrl && !s.webhookUrl) {
+        s.webhookUrl = webhookUrl;
+      }
+      setSettings(s);
+    });
   }, []);
 
   // Handle pause toggle
@@ -445,10 +454,19 @@ export function Agentation({
 
   // Send annotations to agent via MCP endpoint
   const handleSendToAgent = useCallback(async () => {
-    if (!endpoint || annotations.length === 0) return;
+    if (annotations.length === 0) return;
     const { content } = generateMarkdown(annotations, currentRoute || storageKey, settings.outputDetail);
-    await sendToAgent(annotations, content);
-  }, [endpoint, annotations, currentRoute, storageKey, settings.outputDetail, sendToAgent]);
+
+    // Fire onSubmit callback (web parity)
+    if (onSubmit) {
+      onSubmit(content, annotations);
+    }
+
+    // Also sync via MCP if endpoint provided
+    if (endpoint) {
+      await sendToAgent(annotations, content);
+    }
+  }, [endpoint, annotations, currentRoute, storageKey, settings.outputDetail, sendToAgent, onSubmit]);
 
   // Wrap clearAll to call onAnnotationsClear callback
   const handleClearAll = useCallback(() => {

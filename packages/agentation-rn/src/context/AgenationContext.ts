@@ -30,3 +30,8 @@ export interface AgenationContextValue {
  * Consumers should handle null gracefully (no-op)
  */
 export const AgenationContext = createContext<AgenationContextValue | null>(null);
+
+/** @deprecated Use AgenationContext (kept for backward compat, will rename in next major) */
+export const AgentationContext = AgenationContext;
+
+export type AgentationContextValue = AgenationContextValue;

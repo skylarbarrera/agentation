@@ -13,6 +13,10 @@ export { Agentation } from './components/Agentation';
 export { AgenationView } from './components/AgenationView';
 export type { AgenationViewProps } from './components/AgenationView';
 
+// Shared components (for building custom UIs — web parity)
+export { AnnotationPopup } from './components/AnnotationPopup';
+export * from './components/Icons';
+
 // =============================================================================
 // Types (Web API Parity)
 // =============================================================================
@@ -23,14 +27,15 @@ export type {
   DemoAnnotation,
   OutputDetailLevel,
 
-  // Props (matching web)
-  AgenationProps,
-  AgentationProps, // Web API alias
+  // Props
+  AgentationProps,
+  AgenationProps, // @deprecated alias
 
   // Plugin system
   AgentationPlugin,
+  PluginExtra,
 
-  // Internal types
+  // Component types (for custom UIs)
   AnnotationMarkerProps,
   AnnotationPopupProps,
   CodeInfo,
@@ -73,8 +78,8 @@ export { useAgentationSync } from './hooks/useAgentationSync';
 export type { UseAgentationSyncOptions, UseAgentationSyncReturn } from './hooks/useAgentationSync';
 
 // Context (for advanced usage)
-export { AgenationContext } from './context/AgenationContext';
-export type { AgenationContextValue } from './context/AgenationContext';
+export { AgenationContext, AgentationContext } from './context/AgenationContext';
+export type { AgenationContextValue, AgentationContextValue } from './context/AgenationContext';
 
 // =============================================================================
 // Utilities (with Web API Aliases)

@@ -406,7 +406,7 @@ export interface Annotation {
  *
  * API-compatible with web version (agentation)
  */
-export interface AgenationProps {
+export interface AgentationProps {
   /** Child components to wrap (RN-specific, web renders floating) */
   children: React.ReactNode;
 
@@ -465,6 +465,12 @@ export interface AgenationProps {
    * Web parity: receives markdown output
    */
   onCopy?: (markdown: string) => void;
+
+  /**
+   * Callback when "Send to Agent" is clicked
+   * Web parity: receives markdown output and annotations
+   */
+  onSubmit?: (output: string, annotations: Annotation[]) => void;
 
   /**
    * Whether to copy to clipboard when copy button is clicked
@@ -541,7 +547,13 @@ export interface AgenationProps {
 
   /**
    * Session ID to rejoin on mount
+   * Web parity: matches web's sessionId prop
    * If provided, will attempt to load existing session
+   */
+  sessionId?: string;
+
+  /**
+   * @deprecated Use sessionId instead
    */
   initialSessionId?: string;
 
@@ -604,10 +616,9 @@ export interface AgenationProps {
 }
 
 /**
- * Web API alias for AgenationProps
- * Matches web package export name
+ * @deprecated Use AgentationProps instead
  */
-export type AgentationProps = AgenationProps;
+export type AgenationProps = AgentationProps;
 
 /**
  * Props for annotation marker components

@@ -19,6 +19,32 @@ import {
 } from './fiberTraversal';
 
 /**
+ * Framework-internal component names to skip during detection.
+ * These are wrapper/infrastructure components from navigation libraries
+ * and other frameworks that users don't write directly.
+ */
+const FRAMEWORK_INTERNAL_PATTERNS: RegExp[] = [
+  // React Navigation internals
+  /^(Navigator|Screen|Route|SceneView|NavigationContent)$/,
+  /^(Stack|Tab|Drawer|MaterialTopTab|BottomTab)(Navigator|Screen|View)$/,
+  /^(StackView|CardStack|CardContainer|Card|HeaderConfig)$/,
+  /^(NavigationContainer|BaseNavigationContainer)$/,
+  /^(Screen|Route)Content$/,
+  // Expo Router internals
+  /^(Slot|Layout|ErrorBoundary|SuspenseFallback|Navigator)$/,
+  /^_layout$/,
+  // React Native internals (beyond RCT* already handled)
+  /^(SafeAreaProvider|SafeAreaInsetsContext)$/,
+  /^(GestureHandler|NativeViewGestureHandler|GestureDetector)$/,
+  // Generic framework wrappers
+  /^(Provider|Consumer|Context|ForwardRef|Suspense|Fragment)$/,
+];
+
+function isFrameworkInternal(name: string): boolean {
+  return FRAMEWORK_INTERNAL_PATTERNS.some(pattern => pattern.test(name));
+}
+
+/**
  * Measure view bounds using React Native's UIManager
  */
 async function measureView(viewInstance: any): Promise<{ x: number; y: number; width: number; height: number } | null> {
@@ -180,10 +206,10 @@ export async function detectComponentAtPoint(
         height: inspectorData.frame.height,
       } : null;
 
-      // Extract parent components from hierarchy (skip native components like RCTView)
+      // Extract parent components from hierarchy (skip native and framework-internal components)
       const allComponents = inspectorData.hierarchy
         .map(item => item.name)
-        .filter(name => name && !name.startsWith('RCT') && name !== 'View');
+        .filter(name => name && !name.startsWith('RCT') && name !== 'View' && !isFrameworkInternal(name));
 
       const parentComponents = allComponents.slice(0, -1); // All except last (self)
 
@@ -278,8 +304,9 @@ export async function detectComponentAtPoint(
               const fileName = callerSource.fileName || '';
 
               // Skip library components (paths containing 'Agentation' or 'node_modules')
-              if (fileName.includes('Agentation') || fileName.includes('node_modules')) {
-                debugLog(' Skipping library component:', item.name, fileName);
+              // and framework-internal components (React Navigation, Expo Router, etc.)
+              if (fileName.includes('Agentation') || fileName.includes('node_modules') || isFrameworkInternal(item.name)) {
+                debugLog(' Skipping library/framework component:', item.name, fileName);
                 continue;
               }
 

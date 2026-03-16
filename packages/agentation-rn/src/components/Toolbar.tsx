@@ -202,6 +202,8 @@ export interface ToolbarProps {
   onWebhookUrlChange?: (url: string) => void;
   webhooksEnabled?: boolean;
   onWebhooksEnabledChange?: (enabled: boolean) => void;
+  // Hide Until Restart
+  onHideUntilRestart?: () => void;
 }
 
 export function Toolbar(props: ToolbarProps) {
@@ -235,6 +237,7 @@ export function Toolbar(props: ToolbarProps) {
     onWebhookUrlChange,
     webhooksEnabled: controlledWebhooksEnabled,
     onWebhooksEnabledChange,
+    onHideUntilRestart,
   } = props;
 
   const insets = useSafeAreaInsets();
@@ -465,6 +468,20 @@ export function Toolbar(props: ToolbarProps) {
                   <Text style={[styles.toggleLabel, { color: theme.toggleText }]}>Clear on copy/send</Text>
                 </TouchableOpacity>
               </View>
+
+              {/* Hide Until Restart */}
+              {onHideUntilRestart && (
+                <View style={[styles.settingsSection, { borderTopColor: theme.border }]}>
+                  <TouchableOpacity
+                    style={styles.settingsRow}
+                    onPress={onHideUntilRestart}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.settingsLabel, { color: theme.textSecondary }]}>Hide Until Restart</Text>
+                    <IconEyeSlash size={14} color={theme.textQuaternary} />
+                  </TouchableOpacity>
+                </View>
+              )}
 
               {/* Navigation to Automations page */}
               <View style={[styles.settingsSection, { borderTopColor: theme.border }]}>

@@ -63,15 +63,21 @@ export type {
   WebhookPayload,
 } from './types';
 
-// Export constants
+// Export constants and color utilities
 export {
   DEFAULT_SETTINGS,
   DEFAULT_ANNOTATION_STATUS,
   DEFAULT_SESSION_STATUS,
+  COLOR_OPTIONS,
+  resolveAnnotationColor,
+  resolveAnnotationColorId,
 } from './types';
 
+// Export type for color IDs
+export type { AnnotationColor, AnnotationColorId } from './types';
+
 // Hooks
-export { useAnnotations } from './hooks/useAnnotations';
+export { useAnnotations, isRenderableAnnotation } from './hooks/useAnnotations';
 export type { UseAnnotationsOptions, UseAnnotationsReturn } from './hooks/useAnnotations';
 export { useAgentationScroll } from './hooks/useAgentationScroll';
 export type { UseAgentationScrollReturn } from './hooks/useAgentationScroll';

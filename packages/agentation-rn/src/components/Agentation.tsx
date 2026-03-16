@@ -17,9 +17,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { debugLog } from '../utils/debug';
 import type { AgentationProps, AgenationProps, Annotation, ComponentDetection, DemoAnnotation, AgenationSettings, OutputDetailLevel, AgentationPlugin } from '../types';
-import { DEFAULT_SETTINGS } from '../types';
+import { DEFAULT_SETTINGS, resolveAnnotationColor, resolveAnnotationColorId } from '../types';
 import { loadSettings, saveSettings } from '../utils/storage';
-import { useAnnotations } from '../hooks/useAnnotations';
+import { useAnnotations, isRenderableAnnotation } from '../hooks/useAnnotations';
 import { useAgentationSync } from '../hooks/useAgentationSync';
 import { generateId, getTimestamp } from '../utils/helpers';
 import { detectComponentAtPoint } from '../utils/componentDetection';
@@ -153,6 +153,7 @@ export function Agentation({
   const [isPaused, setIsPaused] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [showMarkers, setShowMarkers] = useState(true);
+  const [hiddenUntilRestart, setHiddenUntilRestart] = useState(false);
   const contentRef = useRef<View>(null);
 
   // MCP sync (only active when endpoint provided)
@@ -201,9 +202,11 @@ export function Agentation({
 
   // Settings change handlers
   const handleAnnotationColorChange = useCallback((color: string) => {
-    const newSettings = { ...settings, annotationColor: color };
+    const resolvedColor = resolveAnnotationColor(color);
+    const resolvedId = resolveAnnotationColorId(color);
+    const newSettings = { ...settings, annotationColor: resolvedColor, annotationColorId: resolvedId };
     setSettings(newSettings);
-    saveSettings({ annotationColor: color });
+    saveSettings({ annotationColor: resolvedColor, annotationColorId: resolvedId });
   }, [settings]);
 
   const handleAutoClearAfterCopyChange = useCallback((value: boolean) => {
@@ -237,6 +240,15 @@ export function Agentation({
   const handleShowMarkersChange = useCallback((show: boolean) => {
     setShowMarkers(show);
   }, []);
+
+  const handleHideUntilRestart = useCallback(() => {
+    setHiddenUntilRestart(true);
+    // Also exit annotation mode when hiding
+    if (isAnnotationMode) {
+      setIsAnnotationMode(false);
+      onAnnotationModeDisabled?.();
+    }
+  }, [isAnnotationMode, onAnnotationModeDisabled]);
 
   // Callback for useAgentationScroll hook to report scroll position
   const reportScrollOffset = useCallback((x: number, y: number) => {
@@ -487,6 +499,7 @@ export function Agentation({
   // Filter annotations to only show markers for current route
   const visibleAnnotations = useMemo(() => {
     return annotations.filter(annotation => {
+      if (!isRenderableAnnotation(annotation)) return false;
       if (!annotation.routeName && !currentRoute) return true;
       if (!annotation.routeName) return true;
       return annotation.routeName === currentRoute;
@@ -510,7 +523,7 @@ export function Agentation({
           {children}
         </View>
 
-        <>
+        {!hiddenUntilRestart && <>
           {isAnnotationMode && !popupVisible && (
             <View
               style={styles.overlayTouch}
@@ -598,8 +611,9 @@ export function Agentation({
             onWebhookUrlChange={handleWebhookUrlChange}
             webhooksEnabled={settings.webhooksEnabled}
             onWebhooksEnabledChange={handleWebhooksEnabledChange}
+            onHideUntilRestart={handleHideUntilRestart}
           />
-        </>
+        </>}
       </View>
     </AgenationContext.Provider>
   );

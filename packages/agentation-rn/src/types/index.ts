@@ -64,19 +64,55 @@ export type OutputDetailLevel = 'compact' | 'standard' | 'detailed' | 'forensic'
 
 /**
  * Available annotation marker colors
- * Matches web version's COLOR_OPTIONS
+ * Updated to match web v2.3+ ID-based color system with new palette
+ *
+ * Each option has:
+ * - id: Stable identifier used in settings (new, preferred)
+ * - value: Hex color string (kept for backward compat)
+ * - color: Alias for value (matches upstream web naming)
+ * - label: Human-readable name
  */
 export const COLOR_OPTIONS = [
-  { value: '#AF52DE', label: 'Purple' },
-  { value: '#3c82f7', label: 'Blue' },
-  { value: '#5AC8FA', label: 'Cyan' },
-  { value: '#34C759', label: 'Green' },
-  { value: '#FFD60A', label: 'Yellow' },
-  { value: '#FF9500', label: 'Orange' },
-  { value: '#FF3B30', label: 'Red' },
+  { id: 'indigo', value: '#6155F5', color: '#6155F5', label: 'Indigo' },
+  { id: 'blue',   value: '#0088FF', color: '#0088FF', label: 'Blue' },
+  { id: 'cyan',   value: '#00C3D0', color: '#00C3D0', label: 'Cyan' },
+  { id: 'green',  value: '#34C759', color: '#34C759', label: 'Green' },
+  { id: 'yellow', value: '#FFCC00', color: '#FFCC00', label: 'Yellow' },
+  { id: 'orange', value: '#FF8D28', color: '#FF8D28', label: 'Orange' },
+  { id: 'red',    value: '#FF383C', color: '#FF383C', label: 'Red' },
 ] as const;
 
 export type AnnotationColor = typeof COLOR_OPTIONS[number]['value'];
+export type AnnotationColorId = typeof COLOR_OPTIONS[number]['id'];
+
+/**
+ * Resolve a color ID or hex value to a hex color string.
+ * Supports both the new ID-based system and legacy hex values.
+ */
+export function resolveAnnotationColor(idOrValue: string): string {
+  // Try to find by ID first
+  const byId = COLOR_OPTIONS.find(c => c.id === idOrValue);
+  if (byId) return byId.value;
+  // Try to find by hex value (backward compat)
+  const byValue = COLOR_OPTIONS.find(c => c.value === idOrValue);
+  if (byValue) return byValue.value;
+  // Fallback: if it looks like a hex color, use it directly
+  if (idOrValue.startsWith('#')) return idOrValue;
+  // Default to first color
+  return COLOR_OPTIONS[0].value;
+}
+
+/**
+ * Resolve a hex color value to its color ID.
+ * Returns the ID if found, otherwise returns the value as-is.
+ */
+export function resolveAnnotationColorId(idOrValue: string): string {
+  const byId = COLOR_OPTIONS.find(c => c.id === idOrValue);
+  if (byId) return byId.id;
+  const byValue = COLOR_OPTIONS.find(c => c.value === idOrValue);
+  if (byValue) return byValue.id;
+  return COLOR_OPTIONS[0].id;
+}
 
 // =============================================================================
 // Demo Annotation Type (Web API Parity)
@@ -824,11 +860,19 @@ export interface AgenationSettings {
   autoClearAfterCopy: boolean;
 
   /**
-   * Annotation marker color
-   * Web parity: hex color string
-   * Default: '#3c82f7' (Blue)
+   * Annotation marker color (hex string)
+   * @deprecated Use annotationColorId for the ID-based system
+   * Kept for backward compatibility — if set, takes precedence when annotationColorId is absent
+   * Default: '#0088FF' (Blue)
    */
   annotationColor: string;
+
+  /**
+   * Annotation marker color ID (new, preferred)
+   * One of: 'indigo' | 'blue' | 'cyan' | 'green' | 'yellow' | 'orange' | 'red'
+   * When set, annotationColor is derived from this.
+   */
+  annotationColorId?: string;
 
   // ==========================================================================
   // RN-Specific Settings
@@ -866,7 +910,8 @@ export interface AgenationSettings {
 export const DEFAULT_SETTINGS: AgenationSettings = {
   outputDetail: 'standard',
   autoClearAfterCopy: false,
-  annotationColor: '#3c82f7',
+  annotationColor: '#0088FF',
+  annotationColorId: 'blue',
   autoSave: true,
   retentionDays: 7,
   includeComponentBounds: true,

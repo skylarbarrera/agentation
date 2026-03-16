@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { OutputDetailLevel, AgenationSettings } from '../types';
-import { DEFAULT_SETTINGS, COLOR_OPTIONS } from '../types';
+import { DEFAULT_SETTINGS, COLOR_OPTIONS, resolveAnnotationColor } from '../types';
 import { loadSettings, saveSettings } from '../utils/storage';
 
 const DETAIL_LEVEL_ORDER: OutputDetailLevel[] = ['compact', 'standard', 'detailed', 'forensic'];
@@ -60,7 +60,9 @@ export function useToolbarSettings(options: ToolbarSettingsOptions): ToolbarSett
 
   const currentOutputDetail = controlledOutputDetail ?? internalSettings.outputDetail;
   const currentAutoClearAfterCopy = controlledAutoClearAfterCopy ?? internalSettings.autoClearAfterCopy;
-  const currentAnnotationColor = controlledAnnotationColor ?? internalSettings.annotationColor;
+  const currentAnnotationColor = resolveAnnotationColor(
+    controlledAnnotationColor ?? internalSettings.annotationColorId ?? internalSettings.annotationColor
+  );
   const currentWebhookUrl = controlledWebhookUrl ?? internalSettings.webhookUrl ?? '';
   const currentWebhooksEnabled = controlledWebhooksEnabled ?? internalSettings.webhooksEnabled ?? false;
 
@@ -85,16 +87,23 @@ export function useToolbarSettings(options: ToolbarSettingsOptions): ToolbarSett
   }, [currentAutoClearAfterCopy, onAutoClearAfterCopyChange]);
 
   const handleAnnotationColorCycle = useCallback(() => {
-    const currentIndex = COLOR_OPTIONS.findIndex(c => c.value === currentAnnotationColor);
+    // Find current by id or hex value
+    const currentIndex = COLOR_OPTIONS.findIndex(
+      c => c.value === currentAnnotationColor || c.id === (internalSettings.annotationColorId ?? '')
+    );
     const nextIndex = (currentIndex + 1) % COLOR_OPTIONS.length;
-    const nextColor = COLOR_OPTIONS[nextIndex].value;
+    const next = COLOR_OPTIONS[nextIndex];
     if (onAnnotationColorChange) {
-      onAnnotationColorChange(nextColor);
+      onAnnotationColorChange(next.value);
     } else {
-      setInternalSettings(prev => ({ ...prev, annotationColor: nextColor }));
-      saveSettings({ annotationColor: nextColor });
+      setInternalSettings(prev => ({
+        ...prev,
+        annotationColor: next.value,
+        annotationColorId: next.id,
+      }));
+      saveSettings({ annotationColor: next.value, annotationColorId: next.id });
     }
-  }, [currentAnnotationColor, onAnnotationColorChange]);
+  }, [currentAnnotationColor, internalSettings.annotationColorId, onAnnotationColorChange]);
 
   const handleWebhookUrlChange = useCallback((url: string) => {
     if (onWebhookUrlChange) {

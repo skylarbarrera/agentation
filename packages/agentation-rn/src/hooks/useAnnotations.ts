@@ -15,6 +15,14 @@ import { detectComponentAtPoint, formatElementPath, getComponentType } from '../
 import { generateMarkdown } from '../utils/markdownGeneration';
 import { getNavigationInfo, NavigationResolver } from '../utils/navigationDetection';
 
+/**
+ * Filter out resolved/dismissed annotations that should not be rendered.
+ * Applied at all sync/load entry points to prevent stale annotations from reappearing.
+ */
+export function isRenderableAnnotation(annotation: Annotation): boolean {
+  return annotation.status !== 'resolved' && annotation.status !== 'dismissed';
+}
+
 export interface UseAnnotationsOptions {
   /** Screen name for context (no longer used for storage) */
   screenName?: string;
